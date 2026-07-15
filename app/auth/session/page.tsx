@@ -5,14 +5,12 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Droplets } from 'lucide-react'
 
-// Handles implicit OAuth flow where token arrives as a URL hash fragment.
-// Supabase JS reads the hash automatically on getSession().
 export default function AuthSessionPage() {
   const router = useRouter()
 
   useEffect(() => {
-    async function handleSession() {
-      // Supabase client automatically parses #access_token from the URL hash
+    // Give Supabase JS a moment to parse the hash fragment from the URL
+    const timer = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession()
 
       if (session?.user) {
@@ -28,11 +26,33 @@ export default function AuthSessionPage() {
           router.replace('/')
         }
       } else {
-        router.replace('/login?error=oauth_failed')
-      }
-    }
+        // Listen for auth state change — Supabase fires this when it processes the hash
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          if (session?.user) {
+            subscription.unsubscribe()
+            supabase.from('profiles').select('role').eq('id', session.user.id).single()
+              .then(({ data: profile }) => {
+                if (profile?.role === 'provider') {
+                  router.replace('/provider')
+                } else {
+                  router.replace('/')
+                }
+              })
+          } else if (event === 'SIGNED_OUT') {
+            subscription.unsubscribe()
+            router.replace('/login?error=oauth_failed')
+          }
+        })
 
-    handleSession()
+        // Fallback after 5 seconds
+        setTimeout(() => {
+          subscription.unsubscribe()
+          router.replace('/login?error=oauth_failed')
+        }, 5000)
+      }
+    }, 500)
+
+    return () => clearTimeout(timer)
   }, [router])
 
   return (
