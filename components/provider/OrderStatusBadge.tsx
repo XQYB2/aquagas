@@ -1,6 +1,7 @@
 import type { OrderStatus } from '@/lib/provider-context'
 
 const CONFIG: Record<OrderStatus, { label: string; dot: string; bg: string; text: string }> = {
+  pending_payment:  { label: 'Awaiting Payment',  dot: 'bg-yellow-400',  bg: 'bg-yellow-50',  text: 'text-yellow-700' },
   placed:           { label: 'New Order',         dot: 'bg-blue-500',    bg: 'bg-blue-50',    text: 'text-blue-700' },
   confirmed:        { label: 'Confirmed',          dot: 'bg-indigo-500',  bg: 'bg-indigo-50',  text: 'text-indigo-700' },
   awaiting_pickup:  { label: 'Awaiting Pickup',   dot: 'bg-purple-500',  bg: 'bg-purple-50',  text: 'text-purple-700' },
@@ -35,6 +36,7 @@ export function getNextStatuses(current: OrderStatus): OrderStatus[] {
 }
 
 export const STATUS_LABELS: Record<OrderStatus, string> = {
+  pending_payment:  'Awaiting Payment',
   placed:           'New Order',
   confirmed:        'Confirm Order',
   awaiting_pickup:  'Instruct Pickup',
@@ -46,6 +48,7 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
 }
 
 export const STATUS_DESCRIPTIONS: Record<OrderStatus, string> = {
+  pending_payment:  'Waiting for customer to complete GCash payment.',
   placed:           'New order waiting for your confirmation.',
   confirmed:        'Send pickup instructions to the customer.',
   awaiting_pickup:  'Waiting for rider to pick up empty gallons from customer.',
