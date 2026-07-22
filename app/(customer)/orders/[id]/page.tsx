@@ -10,7 +10,7 @@ import Link from 'next/link'
 
 type Order = {
   id: string
-  status: 'placed' | 'confirmed' | 'awaiting_pickup' | 'picked_up' | 'being_prepared' | 'out_for_delivery' | 'delivered' | 'cancelled'
+  status: 'pending_payment' | 'placed' | 'confirmed' | 'awaiting_pickup' | 'picked_up' | 'being_prepared' | 'out_for_delivery' | 'delivered' | 'cancelled'
   total_amount: number
   delivery_address: string
   delivery_fee: number
@@ -19,6 +19,8 @@ type Order = {
   provider_id: string
   provider_name: string
   service_type: 'water' | 'lpg' | 'both' | null
+  payment_method: string | null
+  payment_status: 'unpaid' | 'pending' | 'paid' | null
   items: { id: string; product_name: string; quantity: number; unit_price: number }[]
 }
 
@@ -46,7 +48,7 @@ export default function OrderDetailPage() {
       setLoading(true)
       const { data: o } = await supabase
         .from('orders')
-        .select('id, status, total_amount, delivery_address, estimated_delivery, created_at, provider_id, providers(store_name, delivery_fee, service_type)')
+        .select('id, status, total_amount, delivery_address, estimated_delivery, payment_method, payment_status, created_at, provider_id, providers(store_name, delivery_fee, service_type)')
         .eq('id', id)
         .single()
 
@@ -73,6 +75,8 @@ export default function OrderDetailPage() {
         provider_id: op.provider_id,
         provider_name: op.providers?.store_name || 'Store',
         service_type: op.providers?.service_type || null,
+        payment_method: op.payment_method || null,
+        payment_status: op.payment_status || null,
         items: (items || []).map((i: any) => ({
           id: i.id, product_name: i.products?.name || 'Item', quantity: i.quantity, unit_price: i.unit_price,
         })),
@@ -88,6 +92,22 @@ export default function OrderDetailPage() {
       setLoading(false)
     }
     load()
+
+    // Live-update when webhook confirms GCash payment (pending_payment → placed)
+    const channel = supabase
+      .channel(`order-${id}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}` }, payload => {
+        const r = payload.new as any
+        setOrder(prev => prev ? {
+          ...prev,
+          status: r.status,
+          payment_status: r.payment_status ?? prev.payment_status,
+          estimated_delivery: r.estimated_delivery ?? prev.estimated_delivery,
+        } : null)
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [id])
 
   async function handleSubmitReview() {
@@ -114,9 +134,15 @@ export default function OrderDetailPage() {
     if (!order) return
     setCancelling(true)
 
-    const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', order.id)
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: 'cancelled' })
+      .eq('id', order.id)
+      .eq('customer_id', user?.id ?? '')
 
-    if (!error) {
+    if (error) {
+      alert('Could not cancel order: ' + error.message)
+    } else {
       setOrder(prev => prev ? { ...prev, status: 'cancelled' as const } : null)
     }
     setCancelling(false)
@@ -160,11 +186,26 @@ export default function OrderDetailPage() {
       </div>
 
       <div className="space-y-4">
+        {/* Awaiting GCash Payment banner */}
+        {order.status === 'pending_payment' && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5 flex items-start gap-3">
+            <div className="w-8 h-8 bg-yellow-100 rounded-xl flex items-center justify-center shrink-0">
+              <AlertCircle className="w-4 h-4 text-yellow-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-yellow-800">Awaiting GCash Payment</p>
+              <p className="text-xs text-yellow-600 mt-0.5">Complete your payment on the GCash page. Your order will be sent to the store once payment is confirmed.</p>
+            </div>
+          </div>
+        )}
+
         {/* Status Stepper */}
+        {order.status !== 'pending_payment' && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <h2 className="font-semibold text-gray-900 mb-5 text-sm">Delivery Status</h2>
           <StatusStepper status={order.status as any} estimatedDelivery={order.estimated_delivery} serviceType={order.service_type} />
         </div>
+        )}
 
         {/* Store Info */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -213,21 +254,50 @@ export default function OrderDetailPage() {
         {/* Payment */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <div className="flex items-center gap-2">
-            <Banknote className="w-4 h-4 text-green-500" />
-            <span className="text-sm font-semibold text-gray-900">Cash on Delivery</span>
+            {order.payment_method === 'gcash' ? (
+              <>
+                <div className="w-5 h-5 bg-blue-100 rounded flex items-center justify-center text-blue-600 font-bold text-xs">G</div>
+                <span className="text-sm font-semibold text-gray-900">GCash</span>
+              </>
+            ) : (
+              <>
+                <Banknote className="w-4 h-4 text-green-500" />
+                <span className="text-sm font-semibold text-gray-900">Cash on Delivery</span>
+              </>
+            )}
           </div>
         </div>
 
         {/* Cancel Button */}
-        {order.status === 'placed' && (
-          <button
-            onClick={handleCancel}
-            disabled={cancelling}
-            className="w-full py-3 rounded-2xl border-2 border-red-200 text-red-500 font-semibold text-sm hover:bg-red-50 transition-colors disabled:opacity-50"
-          >
-            {cancelling ? 'Cancelling…' : 'Cancel Order'}
-          </button>
-        )}
+        {(() => {
+          const isGcash = order.payment_method === 'gcash'
+          const COD_CANCELLABLE: Order['status'][] = ['placed', 'confirmed', 'awaiting_pickup']
+          const canCancel = isGcash
+            ? order.payment_status === 'unpaid'
+            : COD_CANCELLABLE.includes(order.status)
+
+          if (order.status === 'cancelled' || order.status === 'delivered' || order.status === 'pending_payment') return null
+
+          if (!canCancel) {
+            return (
+              <div className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-500 text-center">
+                {isGcash
+                  ? '🔒 GCash payment confirmed — this order can no longer be cancelled. Contact the store if you have concerns.'
+                  : '🔒 Cannot cancel after gallons have been picked up.'}
+              </div>
+            )
+          }
+
+          return (
+            <button
+              onClick={handleCancel}
+              disabled={cancelling}
+              className="w-full py-3 rounded-2xl border-2 border-red-200 text-red-500 font-semibold text-sm hover:bg-red-50 transition-colors disabled:opacity-50"
+            >
+              {cancelling ? 'Cancelling…' : 'Cancel Order'}
+            </button>
+          )
+        })()}
 
         {order.status === 'delivered' && (
           <div className="bg-white rounded-2xl border border-gray-100 p-5">

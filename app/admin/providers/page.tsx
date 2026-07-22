@@ -7,24 +7,50 @@ import { AddProviderModal } from '@/components/admin/AddProviderModal'
 import {
   Search, CheckCircle, Ban, RefreshCw, X, Plus,
   Star, Phone, MapPin, ShoppingBag, Banknote, Droplets, Flame,
-  ChevronDown, FileText,
+  ChevronDown, FileText, CreditCard, Eye, EyeOff, Save,
 } from 'lucide-react'
 import type { AdminProvider } from '@/lib/admin-context'
 
 type Tab = 'all' | 'pending' | 'active' | 'suspended'
 
 export default function AdminProvidersPage() {
-  const { providers, approveProvider, suspendProvider, reactivateProvider, getDocumentUrl } = useAdmin()
+  const { providers, approveProvider, suspendProvider, reactivateProvider, getDocumentUrl, saveKonfirmaKeys } = useAdmin()
   const [tab, setTab] = useState<Tab>('all')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<AdminProvider | null>(null)
   const [actioning, setActioning] = useState<string | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
 
+  // Konfirma keys form state
+  const [konfirmaForm, setKonfirmaForm] = useState({ pk: '', sk: '', wallet_id: '', webhook_secret: '' })
+  const [showSecrets, setShowSecrets] = useState(false)
+  const [savingKeys, setSavingKeys] = useState(false)
+  const [keysSaved, setKeysSaved] = useState(false)
+
   async function viewDocument(path: string) {
     const url = await getDocumentUrl(path)
     if (url) window.open(url, '_blank')
     else alert('Could not load document.')
+  }
+
+  function openProvider(p: AdminProvider) {
+    setSelected(p)
+    setKonfirmaForm({
+      pk: p.konfirma_pk ?? '',
+      sk: p.konfirma_sk ?? '',
+      wallet_id: p.konfirma_wallet_id ?? '',
+      webhook_secret: p.konfirma_webhook_secret ?? '',
+    })
+    setKeysSaved(false)
+  }
+
+  async function handleSaveKeys() {
+    if (!selected) return
+    setSavingKeys(true)
+    const ok = await saveKonfirmaKeys(selected.id, konfirmaForm)
+    setSavingKeys(false)
+    if (ok) setKeysSaved(true)
+    else alert('Failed to save keys.')
   }
 
   const counts = useMemo(() => ({
@@ -119,7 +145,7 @@ export default function AdminProvidersPage() {
               {filtered.map(p => (
                 <tr key={p.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
-                    <button onClick={() => setSelected(p)} className="text-left">
+                    <button onClick={() => openProvider(p)} className="text-left">
                       <p className="font-semibold text-gray-900 hover:text-indigo-600 transition-colors">{p.store_name}</p>
                       <p className="text-xs text-gray-400 truncate max-w-[140px]">{p.address}</p>
                     </button>
@@ -171,7 +197,7 @@ export default function AdminProvidersPage() {
                           {actioning === p.id ? '…' : <><RefreshCw className="w-3.5 h-3.5" /> Reactivate</>}
                         </button>
                       )}
-                      <button onClick={() => setSelected(p)} className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-xs font-semibold transition-colors">
+                      <button onClick={() => openProvider(p)} className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-xs font-semibold transition-colors">
                         View
                       </button>
                     </div>
@@ -274,6 +300,54 @@ export default function AdminProvidersPage() {
                     ) : <span className="text-xs text-gray-400">Not uploaded</span>}
                   </div>
                 </div>
+              </div>
+
+              {/* Konfirma / PayAll Keys */}
+              <div className="border border-blue-100 bg-blue-50 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide flex items-center gap-1.5">
+                    <CreditCard className="w-3.5 h-3.5" /> GCash Payment Gateway (Konfirma)
+                  </p>
+                  <button onClick={() => setShowSecrets(s => !s)} className="text-blue-400 hover:text-blue-600 transition-colors">
+                    {showSecrets ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <div className="space-y-2.5">
+                  {[
+                    { label: 'Public Key (PK)', key: 'pk' as const, placeholder: 'pk_live_…' },
+                    { label: 'Secret Key (SK)', key: 'sk' as const, placeholder: 'sk_live_…', secret: true },
+                    { label: 'Wallet Account ID', key: 'wallet_id' as const, placeholder: 'uuid…' },
+                    { label: 'Webhook Signing Secret', key: 'webhook_secret' as const, placeholder: 'whsec_…', secret: true },
+                  ].map(({ label, key, placeholder, secret }) => (
+                    <div key={key}>
+                      <label className="block text-xs font-medium text-blue-600 mb-1">{label}</label>
+                      <input
+                        type={secret && !showSecrets ? 'password' : 'text'}
+                        value={konfirmaForm[key]}
+                        onChange={e => { setKonfirmaForm(f => ({ ...f, [key]: e.target.value })); setKeysSaved(false) }}
+                        placeholder={placeholder}
+                        className="w-full px-3 py-2 rounded-lg border border-blue-200 bg-white text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-300 placeholder:text-gray-300"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    onClick={handleSaveKeys}
+                    disabled={savingKeys}
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    {savingKeys ? 'Saving…' : 'Save Keys'}
+                  </button>
+                  {keysSaved && <span className="text-xs text-green-600 font-semibold">✓ Saved</span>}
+                  {(selected.konfirma_pk && selected.konfirma_sk) && (
+                    <span className="ml-auto text-xs text-blue-600 font-semibold bg-blue-100 px-2 py-0.5 rounded-full">✓ Configured</span>
+                  )}
+                </div>
+                <p className="text-xs text-blue-400 mt-2">
+                  These keys are used when this provider's customers pay via GCash. Get them from your Konfirma/PayAll dashboard.
+                </p>
               </div>
 
               <p className="text-xs text-gray-400">

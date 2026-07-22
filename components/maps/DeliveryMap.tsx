@@ -84,6 +84,7 @@ export function DeliveryMap({ destLat, destLng, customerName, address }: Props) 
         </div>
 
         <MapContainer
+          key={`${destLat},${destLng}`}
           center={[destLat, destLng]}
           zoom={15}
           style={{ height: '100%', width: '100%' }}

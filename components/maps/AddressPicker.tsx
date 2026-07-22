@@ -97,13 +97,14 @@ export function AddressPicker({ lat, lng, onChange }: Props) {
           {locating ? '…locating' : '📍 Use my location'}
         </button>
       </div>
-      <div className="h-52 rounded-xl overflow-hidden border border-gray-200 relative">
+      <div className="h-52 rounded-xl overflow-hidden border border-gray-200 relative mb-1">
         {loading && (
           <div className="absolute inset-0 z-[1000] bg-white/60 flex items-center justify-center">
             <div className="w-5 h-5 border-2 border-water-500 border-t-transparent rounded-full animate-spin" />
           </div>
         )}
         <MapContainer
+          key="address-picker-map"
           center={position ?? defaultCenter}
           zoom={position ? 16 : 6}
           style={{ height: '100%', width: '100%' }}

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard, ShoppingBag, Package, Settings,
+  LayoutDashboard, ShoppingBag, Package, Settings, Wallet,
   Droplets, LogOut, Menu, X, Flame,
 } from 'lucide-react'
 import { useProvider } from '@/lib/provider-context'
@@ -14,6 +14,7 @@ const NAV = [
   { href: '/provider/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/provider/orders', icon: ShoppingBag, label: 'Orders' },
   { href: '/provider/products', icon: Package, label: 'Products' },
+  { href: '/provider/wallet', icon: Wallet, label: 'Wallet' },
   { href: '/provider/settings', icon: Settings, label: 'Settings' },
 ]
 

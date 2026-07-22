@@ -1,5 +1,4 @@
 import { Navbar } from '@/components/customer/Navbar'
-import { CartBar } from '@/components/customer/CartBar'
 import { AuthGuard } from '@/components/customer/AuthGuard'
 import { BottomNav } from '@/components/customer/BottomNav'
 import { AquaBot } from '@/components/customer/AquaBot'
@@ -12,7 +11,6 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
         <main className="flex-1 pb-20 md:pb-8">
           {children}
         </main>
-        <CartBar />
         <BottomNav />
         <AquaBot />
       </div>

@@ -8,7 +8,7 @@ const SYSTEM_PROMPT = `You are AquaBot, the friendly AI assistant for AquaGas �
 
 You will be given a CONTEXT block with live data from the AquaGas database. Use it to answer accurately.
 If the CONTEXT block shows no providers or products, say: "No stores are available in your area yet — check back soon!"
-If MY ORDERS is in the CONTEXT, list all orders with their status clearly. Never ask for an order ID — show all orders from the context.
+If MY ORDERS is in the CONTEXT, list the orders with their status clearly. NEVER ask the customer for an order ID or any other identifier — all their orders are already in the context. Just show them directly.
 
 Your role:
 - Help customers find open water/LPG delivery stores and their products
@@ -28,7 +28,7 @@ async function getContext(userMessage: string, userId?: string): Promise<string>
   const msg = userMessage.toLowerCase()
   const wantsProviders = msg.includes('provider') || msg.includes('store') || msg.includes('station') || msg.includes('open') || msg.includes('who') || msg.includes('where') || msg.includes('available')
   const wantsProducts = msg.includes('product') || msg.includes('price') || msg.includes('water') || msg.includes('lpg') || msg.includes('gas') || msg.includes('gallon') || msg.includes('tank') || msg.includes('cost') || msg.includes('how much')
-  const wantsOrders = msg.includes('order') || msg.includes('pending') || msg.includes('status') || msg.includes('track') || msg.includes('delivery') || msg.includes('my order')
+  const wantsOrders = msg.includes('order') || msg.includes('pending') || msg.includes('status') || msg.includes('track') || msg.includes('delivery') || msg.includes('my order') || msg.includes('recent') || msg.includes('latest') || msg.includes('last order') || msg.includes('placed')
 
   const parts: string[] = []
 

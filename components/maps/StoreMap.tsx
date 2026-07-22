@@ -23,6 +23,7 @@ function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
 export function StoreMap({ lat, lng, storeName }: { lat: number; lng: number; storeName: string }) {
   return (
     <MapContainer
+      key={`${lat},${lng}`}
       center={[lat, lng]}
       zoom={15}
       style={{ height: '100%', width: '100%', borderRadius: '12px' }}

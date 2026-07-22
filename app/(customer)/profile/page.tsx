@@ -4,12 +4,22 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { User, Phone, Mail, MapPin, LogOut, Plus, Trash2, ChevronRight } from 'lucide-react'
+import { User, Phone, Mail, MapPin, LogOut, Plus, Trash2, ChevronRight, Home, Briefcase, Heart, MoreHorizontal } from 'lucide-react'
 import Link from 'next/link'
+
+const CATEGORIES = [
+  { value: 'Home',            icon: Home,          color: 'text-blue-500',   bg: 'bg-blue-50'   },
+  { value: "Partner's House", icon: Heart,         color: 'text-pink-500',   bg: 'bg-pink-50'   },
+  { value: 'Work',            icon: Briefcase,     color: 'text-amber-500',  bg: 'bg-amber-50'  },
+  { value: 'Other',           icon: MoreHorizontal,color: 'text-gray-400',   bg: 'bg-gray-50'   },
+]
 
 interface Address {
   id: string
+  label: string | null
   address: string
+  lat: number | null
+  lng: number | null
 }
 
 export default function ProfilePage() {
@@ -17,14 +27,16 @@ export default function ProfilePage() {
   const router = useRouter()
 
   const [addresses, setAddresses] = useState<Address[]>([])
-  const [newAddr, setNewAddr] = useState('')
   const [addingAddr, setAddingAddr] = useState(false)
+  const [newAddr, setNewAddr]     = useState('')
+  const [newLabel, setNewLabel]   = useState('Home')
+  const [saving, setSaving]       = useState(false)
 
   useEffect(() => {
     if (!user) return
     supabase
       .from('customer_addresses')
-      .select('id, address')
+      .select('id, label, address, lat, lng')
       .eq('customer_id', user.id)
       .order('created_at', { ascending: true })
       .then(({ data }) => { if (data) setAddresses(data) })
@@ -32,14 +44,17 @@ export default function ProfilePage() {
 
   async function handleAddAddress() {
     if (!newAddr.trim() || !user) return
+    setSaving(true)
     const { data, error } = await supabase
       .from('customer_addresses')
-      .insert({ customer_id: user.id, address: newAddr.trim() })
-      .select('id, address')
+      .insert({ customer_id: user.id, address: newAddr.trim(), label: newLabel })
+      .select('id, label, address, lat, lng')
       .single()
+    setSaving(false)
     if (!error && data) {
       setAddresses(a => [...a, data])
       setNewAddr('')
+      setNewLabel('Home')
       setAddingAddr(false)
     }
   }
@@ -119,26 +134,54 @@ export default function ProfilePage() {
               <MapPin className="w-4 h-4 text-water-500" />
               Saved Addresses
             </h2>
-            <button onClick={() => setAddingAddr(a => !a)} className="text-water-600 text-sm font-semibold flex items-center gap-1 hover:text-water-700 transition-colors">
+            <button
+              onClick={() => setAddingAddr(a => !a)}
+              className="text-water-600 text-sm font-semibold flex items-center gap-1 hover:text-water-700 transition-colors"
+            >
               <Plus className="w-4 h-4" />
               Add
             </button>
           </div>
 
+          {/* Add form */}
           {addingAddr && (
-            <div className="mb-4 flex gap-2">
+            <div className="mb-4 space-y-3 bg-gray-50 rounded-xl p-4 border border-gray-100">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Category</p>
+              <div className="grid grid-cols-2 gap-2">
+                {CATEGORIES.map(cat => {
+                  const Icon = cat.icon
+                  const active = newLabel === cat.value
+                  return (
+                    <button
+                      key={cat.value}
+                      type="button"
+                      onClick={() => setNewLabel(cat.value)}
+                      className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-semibold transition-colors ${
+                        active
+                          ? `${cat.bg} border-transparent ${cat.color}`
+                          : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {cat.value}
+                    </button>
+                  )
+                })}
+              </div>
               <input
                 type="text"
                 value={newAddr}
                 onChange={e => setNewAddr(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAddAddress()}
                 placeholder="Enter address…"
-                className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-water-300 placeholder:text-gray-400"
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-water-300 placeholder:text-gray-400"
               />
               <button
                 onClick={handleAddAddress}
-                className="px-4 py-2 bg-water-500 text-white rounded-xl text-sm font-semibold hover:bg-water-600 transition-colors"
+                disabled={!newAddr.trim() || saving}
+                className="w-full py-2.5 bg-water-500 hover:bg-water-600 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition-colors"
               >
-                Save
+                {saving ? 'Saving…' : 'Save Address'}
               </button>
             </div>
           )}
@@ -147,15 +190,24 @@ export default function ProfilePage() {
             <p className="text-gray-400 text-sm py-4 text-center">No saved addresses yet.</p>
           ) : (
             <div className="space-y-2">
-              {addresses.map(addr => (
-                <div key={addr.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
-                  <MapPin className="w-4 h-4 text-gray-300 shrink-0" />
-                  <p className="text-sm text-gray-700 flex-1">{addr.address}</p>
-                  <button onClick={() => handleDeleteAddress(addr.id)} className="text-gray-300 hover:text-red-400 transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
+              {addresses.map(addr => {
+                const cat = CATEGORIES.find(c => c.value === addr.label) ?? CATEGORIES[3]
+                const Icon = cat.icon
+                return (
+                  <div key={addr.id} className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
+                    <div className={`w-8 h-8 rounded-xl ${cat.bg} flex items-center justify-center shrink-0`}>
+                      <Icon className={`w-4 h-4 ${cat.color}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-gray-500">{addr.label || 'Saved'}</p>
+                      <p className="text-sm text-gray-700 truncate">{addr.address}</p>
+                    </div>
+                    <button onClick={() => handleDeleteAddress(addr.id)} className="text-gray-300 hover:text-red-400 transition-colors shrink-0">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>

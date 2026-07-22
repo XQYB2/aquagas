@@ -21,6 +21,10 @@ export type AdminProvider = {
   is_open: boolean
   business_permit_url: string | null
   owner_id_url: string | null
+  konfirma_pk: string | null
+  konfirma_sk: string | null
+  konfirma_wallet_id: string | null
+  konfirma_webhook_secret: string | null
 }
 
 export type NewProviderInput = {
@@ -105,6 +109,7 @@ const AdminContext = createContext<AdminState & {
   reactivateProvider: (id: string) => void
   addProvider: (input: NewProviderInput) => Promise<{ success: boolean; error?: string }>
   getDocumentUrl: (path: string) => Promise<string | null>
+  saveKonfirmaKeys: (id: string, keys: { pk: string; sk: string; wallet_id: string; webhook_secret: string }) => Promise<boolean>
   suspendCustomer: (id: string) => void
   reactivateCustomer: (id: string) => void
   forceCancelOrder: (id: string, note: string) => void
@@ -116,6 +121,7 @@ const AdminContext = createContext<AdminState & {
   approveProvider: () => {}, suspendProvider: () => {}, reactivateProvider: () => {},
   addProvider: async () => ({ success: false, error: 'Not initialized' }),
   getDocumentUrl: async () => null,
+  saveKonfirmaKeys: async () => false,
   suspendCustomer: () => {}, reactivateCustomer: () => {},
   forceCancelOrder: () => {}, updateSettings: () => {},
 })
@@ -201,6 +207,10 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         is_open: p.is_open,
         business_permit_url: p.business_permit_url || null,
         owner_id_url: p.owner_id_url || null,
+        konfirma_pk: p.konfirma_pk || null,
+        konfirma_sk: p.konfirma_sk || null,
+        konfirma_wallet_id: p.konfirma_wallet_id || null,
+        konfirma_webhook_secret: p.konfirma_webhook_secret || null,
       }
     })
 
@@ -285,6 +295,24 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.from('providers').update({ approval_status: 'active' }).eq('id', id)
   }
 
+  async function saveKonfirmaKeys(id: string, keys: { pk: string; sk: string; wallet_id: string; webhook_secret: string }): Promise<boolean> {
+    const { error } = await supabase.from('providers').update({
+      konfirma_pk: keys.pk || null,
+      konfirma_sk: keys.sk || null,
+      konfirma_wallet_id: keys.wallet_id || null,
+      konfirma_webhook_secret: keys.webhook_secret || null,
+    }).eq('id', id)
+    if (error) return false
+    setState(s => ({ ...s, providers: s.providers.map(p => p.id === id ? {
+      ...p,
+      konfirma_pk: keys.pk || null,
+      konfirma_sk: keys.sk || null,
+      konfirma_wallet_id: keys.wallet_id || null,
+      konfirma_webhook_secret: keys.webhook_secret || null,
+    } : p) }))
+    return true
+  }
+
   async function addProvider(input: NewProviderInput): Promise<{ success: boolean; error?: string }> {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return { success: false, error: 'Not authenticated' }
@@ -343,7 +371,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     <AdminContext.Provider value={{
       ...state, login, logout,
       approveProvider, suspendProvider, reactivateProvider,
-      addProvider, getDocumentUrl,
+      addProvider, getDocumentUrl, saveKonfirmaKeys,
       suspendCustomer, reactivateCustomer,
       forceCancelOrder, updateSettings,
     }}>

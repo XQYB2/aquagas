@@ -2,7 +2,8 @@ type OrderStatus = 'placed' | 'confirmed' | 'awaiting_pickup' | 'picked_up' | 'b
 type ServiceType = 'water' | 'lpg' | 'both'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  placed:           { label: 'Order Placed',       color: 'bg-blue-50 text-blue-700' },
+  pending_payment:  { label: 'Awaiting Payment',   color: 'bg-yellow-50 text-yellow-700' },
+  placed:           { label: 'Order Placed',        color: 'bg-blue-50 text-blue-700' },
   confirmed:        { label: 'Confirmed',           color: 'bg-indigo-50 text-indigo-700' },
   awaiting_pickup:  { label: 'Put Gallons Outside', color: 'bg-purple-50 text-purple-700' },
   picked_up:        { label: 'Gallons Picked Up',   color: 'bg-cyan-50 text-cyan-700' },

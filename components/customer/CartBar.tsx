@@ -10,7 +10,7 @@ export function CartBar() {
   if (totalItems === 0) return null
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-40 md:left-auto md:right-6 md:w-96">
+    <div className="fixed bottom-20 left-4 right-4 z-40 md:bottom-4 md:left-auto md:right-6 md:w-96">
       <div className="bg-gray-900 rounded-2xl shadow-2xl text-white p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">

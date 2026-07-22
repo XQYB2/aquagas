@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from './supabase'
 
 export type OrderStatus =
+  | 'pending_payment'
   | 'placed'
   | 'confirmed'
   | 'awaiting_pickup'
@@ -22,6 +23,7 @@ export type ProviderOrder = {
   total_amount: number
   delivery_fee: number
   payment_method: string
+  payment_status: 'unpaid' | 'pending' | 'paid'
   notes: string
   estimated_delivery: string | null
   delivery_lat: number | null
@@ -55,6 +57,10 @@ export type ProviderStore = {
   logo_url: string | null
   phone: string
   description: string
+  konfirma_pk: string | null
+  konfirma_sk: string | null
+  konfirma_wallet_id: string | null
+  konfirma_webhook_secret: string | null
 }
 
 interface ProviderState {
@@ -102,12 +108,13 @@ export function ProviderAuthProvider({ children }: { children: React.ReactNode }
       }
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        await loadProviderData(session.user.id)
-      } else {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
         setState({ store: null, products: [], orders: [], isLoggedIn: false, loading: false })
+      } else if (event === 'SIGNED_IN' && session?.user) {
+        await loadProviderData(session.user.id)
       }
+      // ignore TOKEN_REFRESHED, USER_UPDATED, INITIAL_SESSION — already handled by getSession above
     })
 
     return () => subscription.unsubscribe()
@@ -141,6 +148,10 @@ export function ProviderAuthProvider({ children }: { children: React.ReactNode }
       logo_url: providerRow.logo_url,
       phone: '',
       description: '',
+      konfirma_pk: providerRow.konfirma_pk ?? null,
+      konfirma_sk: providerRow.konfirma_sk ?? null,
+      konfirma_wallet_id: providerRow.konfirma_wallet_id ?? null,
+      konfirma_webhook_secret: providerRow.konfirma_webhook_secret ?? null,
     }
 
     const { data: productRows } = await supabase.from('products').select('*').eq('provider_id', providerRow.id)
@@ -164,8 +175,9 @@ export function ProviderAuthProvider({ children }: { children: React.ReactNode }
   async function loadOrders(providerId: string): Promise<ProviderOrder[]> {
     const { data: orderRows } = await supabase
       .from('orders')
-      .select('id, status, total_amount, delivery_address, delivery_lat, delivery_lng, payment_method, notes, estimated_delivery, created_at, updated_at, customer_id')
+      .select('id, status, total_amount, delivery_address, delivery_lat, delivery_lng, payment_method, payment_status, notes, estimated_delivery, created_at, updated_at, customer_id')
       .eq('provider_id', providerId)
+      .neq('status', 'pending_payment')
       .order('created_at', { ascending: false })
 
     if (!orderRows || orderRows.length === 0) return []
@@ -193,6 +205,7 @@ export function ProviderAuthProvider({ children }: { children: React.ReactNode }
       total_amount: o.total_amount,
       delivery_fee: deliveryFee,
       payment_method: o.payment_method,
+      payment_status: o.payment_status ?? 'unpaid',
       notes: o.notes || '',
       estimated_delivery: o.estimated_delivery || null,
       delivery_lat: o.delivery_lat || null,

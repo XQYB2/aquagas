@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useProvider } from '@/lib/provider-context'
-import { Plus, Pencil, Trash2, Droplets, Flame, ToggleLeft, ToggleRight, X, Check } from 'lucide-react'
+import { Plus, Pencil, Trash2, Droplets, Flame, ToggleLeft, ToggleRight, X, ImagePlus } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 import type { ProviderProduct } from '@/lib/provider-context'
 
 type ProductForm = {
@@ -12,10 +13,11 @@ type ProductForm = {
   unit: string
   category: 'water' | 'lpg'
   is_available: boolean
+  image_url: string | null
 }
 
 const EMPTY_FORM: ProductForm = {
-  name: '', description: '', price: '', unit: 'gallon', category: 'water', is_available: true,
+  name: '', description: '', price: '', unit: 'gallon', category: 'water', is_available: true, image_url: null,
 }
 
 export default function ProductsPage() {
@@ -25,6 +27,8 @@ export default function ProductsPage() {
   const [form, setForm] = useState<ProductForm>(EMPTY_FORM)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const waterProducts = products.filter(p => p.category === 'water')
   const lpgProducts = products.filter(p => p.category === 'lpg')
@@ -43,22 +47,34 @@ export default function ProductsPage() {
       unit: product.unit,
       category: product.category,
       is_available: product.is_available,
+      image_url: product.image_url ?? null,
     })
     setEditingId(product.id)
     setShowForm(true)
   }
 
+  async function handleImageUpload(file: File) {
+    setUploading(true)
+    const ext = file.name.split('.').pop()
+    const path = `products/${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: true })
+    if (!error) {
+      const { data } = supabase.storage.from('product-images').getPublicUrl(path)
+      setForm(f => ({ ...f, image_url: data.publicUrl }))
+    }
+    setUploading(false)
+  }
+
   async function handleSave() {
     if (!form.name.trim() || !form.price) return
     setSaving(true)
-    await new Promise(r => setTimeout(r, 500))
     const payload = {
       name: form.name.trim(),
       description: form.description.trim(),
       price: parseFloat(form.price),
       unit: form.unit.trim() || 'gallon',
       category: form.category,
-      image_url: null,
+      image_url: form.image_url,
       is_available: form.is_available,
     }
     if (editingId) {
@@ -141,6 +157,40 @@ export default function ProductsPage() {
             </div>
 
             <div className="p-5 space-y-4">
+              {/* Product Image */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Product Photo</label>
+                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f) }} />
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="w-full h-32 rounded-xl border-2 border-dashed border-gray-200 hover:border-water-300 hover:bg-water-50 transition-colors flex flex-col items-center justify-center gap-2 overflow-hidden relative"
+                >
+                  {form.image_url ? (
+                    <>
+                      <img src={form.image_url} alt="Product" className="absolute inset-0 w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                        <p className="text-white text-xs font-semibold">Change Photo</p>
+                      </div>
+                    </>
+                  ) : uploading ? (
+                    <div className="w-5 h-5 border-2 border-water-500 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <ImagePlus className="w-6 h-6 text-gray-300" />
+                      <p className="text-xs text-gray-400">Tap to upload photo</p>
+                      <p className="text-xs text-gray-300">Default: 💧 or 🔥 icon</p>
+                    </>
+                  )}
+                </button>
+                {form.image_url && (
+                  <button type="button" onClick={() => setForm(f => ({ ...f, image_url: null }))} className="mt-1 text-xs text-red-400 hover:underline">
+                    Remove photo
+                  </button>
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Product Name *</label>
                 <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. 5-Gallon Round Container" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-water-300 placeholder:text-gray-400" />
@@ -238,11 +288,14 @@ function ProductRow({ product, onEdit, onDelete, onToggle }: {
 }) {
   return (
     <div className={`bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-4 ${!product.is_available ? 'opacity-60' : ''}`}>
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${product.category === 'water' ? 'bg-water-50' : 'bg-lpg-50'}`}>
-        {product.category === 'water'
-          ? <Droplets className="w-5 h-5 text-water-500" />
-          : <Flame className="w-5 h-5 text-lpg-500" />
-        }
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden ${product.category === 'water' ? 'bg-water-50' : 'bg-lpg-50'}`}>
+        {product.image_url ? (
+          <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+        ) : product.category === 'water' ? (
+          <Droplets className="w-5 h-5 text-water-500" />
+        ) : (
+          <Flame className="w-5 h-5 text-lpg-500" />
+        )}
       </div>
 
       <div className="flex-1 min-w-0">

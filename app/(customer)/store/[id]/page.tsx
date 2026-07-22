@@ -305,41 +305,56 @@ function RatingBreakdown({ reviews }: { reviews: Review[] }) {
 function ProductRow({
   product, qty, onAdd, onDecrease
 }: {
-  product: { id: string; name: string; description: string | null; price: number; unit: string; is_available: boolean; category: 'water' | 'lpg' }
+  product: { id: string; name: string; description: string | null; price: number; unit: string; is_available: boolean; image_url: string | null; category: 'water' | 'lpg' }
   qty: number
   onAdd: () => void
   onDecrease: () => void
 }) {
   const accent = product.category === 'water' ? 'text-water-600' : 'text-lpg-600'
+  const fallbackBg = product.category === 'water' ? 'bg-water-50' : 'bg-lpg-50'
+  const fallbackEmoji = product.category === 'water' ? '💧' : '🔥'
 
   return (
-    <div className={`flex items-center justify-between bg-white rounded-xl border border-gray-100 p-4 ${!product.is_available ? 'opacity-50' : ''}`}>
-      <div className="flex-1 min-w-0 pr-4">
-        <p className="font-semibold text-gray-900 text-sm">{product.name}</p>
-        <p className="text-gray-400 text-xs mt-0.5 line-clamp-2">{product.description}</p>
-        <p className={`font-bold text-sm mt-1.5 ${accent}`}>₱{product.price} <span className="text-gray-400 font-normal text-xs">/ {product.unit}</span></p>
+    <div className={`flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-3 ${!product.is_available ? 'opacity-50' : ''}`}>
+      {/* Product image */}
+      <div className={`w-16 h-16 rounded-xl overflow-hidden shrink-0 ${fallbackBg} flex items-center justify-center`}>
+        {product.image_url ? (
+          <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-2xl">{fallbackEmoji}</span>
+        )}
       </div>
 
-      {!product.is_available ? (
-        <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-lg font-medium">Unavailable</span>
-      ) : qty === 0 ? (
-        <button
-          onClick={onAdd}
-          className="w-9 h-9 rounded-xl bg-water-500 text-white flex items-center justify-center hover:bg-water-600 transition-colors shadow-sm shadow-water-200"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
-      ) : (
-        <div className="flex items-center gap-2">
-          <button onClick={onDecrease} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-            <Minus className="w-3.5 h-3.5 text-gray-600" />
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-gray-900 text-sm">{product.name}</p>
+        {product.description && (
+          <p className="text-gray-400 text-xs mt-0.5 line-clamp-2">{product.description}</p>
+        )}
+        <p className={`font-bold text-sm mt-1 ${accent}`}>₱{product.price} <span className="text-gray-400 font-normal text-xs">/ {product.unit}</span></p>
+      </div>
+
+      <div className="shrink-0">
+        {!product.is_available ? (
+          <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-lg font-medium">Unavailable</span>
+        ) : qty === 0 ? (
+          <button
+            onClick={onAdd}
+            className="w-9 h-9 rounded-xl bg-water-500 text-white flex items-center justify-center hover:bg-water-600 transition-colors shadow-sm shadow-water-200"
+          >
+            <Plus className="w-4 h-4" />
           </button>
-          <span className="w-6 text-center font-bold text-gray-900">{qty}</span>
-          <button onClick={onAdd} className="w-8 h-8 rounded-lg bg-water-500 text-white flex items-center justify-center hover:bg-water-600 transition-colors">
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
+        ) : (
+          <div className="flex items-center gap-2">
+            <button onClick={onDecrease} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
+              <Minus className="w-3.5 h-3.5 text-gray-600" />
+            </button>
+            <span className="w-6 text-center font-bold text-gray-900">{qty}</span>
+            <button onClick={onAdd} className="w-8 h-8 rounded-lg bg-water-500 text-white flex items-center justify-center hover:bg-water-600 transition-colors">
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

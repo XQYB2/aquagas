@@ -27,20 +27,18 @@ export function BottomNav() {
 
             if (isCart) {
               return (
-                <Link key={href} href={href} className="flex flex-col items-center -mt-6">
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 ${
-                    isActive
-                      ? 'bg-gradient-to-br from-water-500 to-water-700 scale-110'
-                      : 'bg-gradient-to-br from-water-400 to-water-600'
+                <Link key={href} href={href} className="flex flex-col items-center justify-center gap-0.5 py-2 px-3 relative">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
+                    isActive ? 'bg-water-50' : ''
                   }`}>
-                    <Icon className="w-6 h-6 text-white" />
+                    <Icon className={`w-5 h-5 transition-colors ${isActive ? 'text-water-600' : 'text-gray-400'}`} />
                     {totalItems > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-lpg-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      <span className="absolute top-1 right-1 w-4 h-4 bg-lpg-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                         {totalItems > 9 ? '9+' : totalItems}
                       </span>
                     )}
                   </div>
-                  <span className={`text-[10px] font-medium mt-1 ${isActive ? 'text-water-600' : 'text-gray-400'}`}>
+                  <span className={`text-[10px] font-medium ${isActive ? 'text-water-600' : 'text-gray-400'}`}>
                     {label}
                   </span>
                 </Link>

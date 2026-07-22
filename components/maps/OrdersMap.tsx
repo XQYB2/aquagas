@@ -93,6 +93,7 @@ export function OrdersMap({ storeLat, storeLng, storeName, orders }: Props) {
       </button>
 
       <MapContainer
+        key={`${storeLat},${storeLng}`}
         center={[storeLat, storeLng]}
         zoom={13}
         style={{ height: '100%', width: '100%' }}

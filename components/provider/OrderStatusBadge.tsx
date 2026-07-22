@@ -12,7 +12,8 @@ const CONFIG: Record<OrderStatus, { label: string; dot: string; bg: string; text
 }
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  const { label, dot, bg, text } = CONFIG[status]
+  const cfg = CONFIG[status] ?? { label: status, dot: 'bg-gray-400', bg: 'bg-gray-50', text: 'text-gray-600' }
+  const { label, dot, bg, text } = cfg
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${bg} ${text}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />

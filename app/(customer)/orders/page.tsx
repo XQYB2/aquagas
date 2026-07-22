@@ -101,6 +101,8 @@ export default function OrdersPage() {
                 <div>
                   <p className="font-semibold text-gray-900 text-sm">{order.provider_name}</p>
                   <p className="text-gray-400 text-xs mt-0.5">
+                    <span className="font-mono text-gray-500">#{order.id.slice(-6).toUpperCase()}</span>
+                    {' · '}
                     {new Date(order.created_at).toLocaleDateString('en-PH', {
                       month: 'short', day: 'numeric', year: 'numeric',
                       hour: '2-digit', minute: '2-digit'

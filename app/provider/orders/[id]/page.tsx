@@ -43,7 +43,8 @@ export default function ProviderOrderDetailPage() {
     )
   }
 
-  const nextStatuses = getNextStatuses(order.status)
+  const isGcashPaid = order.payment_method === 'gcash' && order.payment_status !== 'unpaid'
+  const nextStatuses = getNextStatuses(order.status).filter(s => s !== 'cancelled' || !isGcashPaid)
 
   async function handleStatusUpdate(newStatus: OrderStatus) {
     setLoading(newStatus)
@@ -238,8 +239,12 @@ export default function ProviderOrderDetailPage() {
               <Banknote className="w-4 h-4 text-green-500" />
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Payment</p>
             </div>
-            <p className="font-semibold text-gray-900 text-sm">Cash on Delivery</p>
-            <p className="text-xs text-gray-400 mt-0.5">Collect ₱{order.total_amount}</p>
+            <p className="font-semibold text-gray-900 text-sm">
+              {order.payment_method === 'gcash' ? 'GCash' : 'Cash on Delivery'}
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {order.payment_method === 'gcash' ? 'Paid via GCash' : `Collect ₱${order.total_amount}`}
+            </p>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 p-4">
             <div className="flex items-center gap-2 mb-1">

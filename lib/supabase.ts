@@ -71,6 +71,8 @@ export type Database = {
           delivery_lat: number | null
           delivery_lng: number | null
           payment_method: string
+          payment_status: 'unpaid' | 'pending' | 'paid'
+          konfirma_session_id: string | null
           notes: string | null
           admin_note: string | null
           created_at: string
