@@ -152,7 +152,8 @@ export default function CheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ order_id: order.id }),
       })
-      const data = await res.json()
+      let data: any = {}
+      try { data = await res.json() } catch { /* empty body — server crashed */ }
       if (!res.ok || !data.payment_url) {
         // GCash session failed — delete the orphaned order so it doesn't show up
         await supabase.from('order_items').delete().eq('order_id', order.id)

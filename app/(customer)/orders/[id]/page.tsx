@@ -37,6 +37,8 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
+  const [retryingPayment, setRetryingPayment] = useState(false)
+  const [retryError, setRetryError] = useState('')
 
   const [review, setReview] = useState<Review | null>(null)
   const [reviewRating, setReviewRating] = useState(0)
@@ -130,6 +132,25 @@ export default function OrderDetailPage() {
     setSubmittingReview(false)
   }
 
+  async function handleRetryPayment() {
+    if (!order) return
+    setRetryingPayment(true)
+    setRetryError('')
+    const res = await fetch('/api/payment/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order_id: order.id }),
+    })
+    let data: any = {}
+    try { data = await res.json() } catch { /* empty body */ }
+    if (!res.ok || !data.payment_url) {
+      setRetryError(data.error || 'Could not start payment. Please try again.')
+      setRetryingPayment(false)
+      return
+    }
+    window.location.href = data.payment_url
+  }
+
   async function handleCancel() {
     if (!order) return
     setCancelling(true)
@@ -188,14 +209,39 @@ export default function OrderDetailPage() {
       <div className="space-y-4">
         {/* Awaiting GCash Payment banner */}
         {order.status === 'pending_payment' && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5 flex items-start gap-3">
-            <div className="w-8 h-8 bg-yellow-100 rounded-xl flex items-center justify-center shrink-0">
-              <AlertCircle className="w-4 h-4 text-yellow-600" />
+          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-8 h-8 bg-yellow-100 rounded-xl flex items-center justify-center shrink-0">
+                <AlertCircle className="w-4 h-4 text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-yellow-800">Awaiting GCash Payment</p>
+                <p className="text-xs text-yellow-600 mt-0.5">Your payment session may have expired. Tap below to get a fresh payment link.</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-yellow-800">Awaiting GCash Payment</p>
-              <p className="text-xs text-yellow-600 mt-0.5">Complete your payment on the GCash page. Your order will be sent to the store once payment is confirmed.</p>
-            </div>
+            {retryError && (
+              <p className="text-xs text-red-500 mb-3">{retryError}</p>
+            )}
+            <button
+              onClick={handleRetryPayment}
+              disabled={retryingPayment}
+              className="w-full py-3 rounded-xl bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+            >
+              {retryingPayment ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Opening payment…
+                </>
+              ) : (
+                <>
+                  <div className="w-4 h-4 bg-white/20 rounded flex items-center justify-center font-bold text-xs">G</div>
+                  Complete Payment via GCash
+                </>
+              )}
+            </button>
           </div>
         )}
 
