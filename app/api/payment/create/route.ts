@@ -15,10 +15,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'order_id is required' }, { status: 400 })
   }
 
-  // Fetch order + provider's per-store Konfirma keys
+  // Fetch order first
   const { data: order, error } = await admin
     .from('orders')
-    .select('id, total_amount, payment_status, providers(konfirma_pk, konfirma_sk, konfirma_wallet_id)')
+    .select('id, total_amount, payment_status, provider_id')
     .eq('id', order_id)
     .maybeSingle()
 
@@ -29,7 +29,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Order already paid' }, { status: 400 })
   }
 
-  const provider = (order as any).providers
+  // Fetch provider keys separately to avoid join direction ambiguity
+  const { data: provider } = await admin
+    .from('providers')
+    .select('konfirma_pk, konfirma_sk, konfirma_wallet_id')
+    .eq('id', (order as any).provider_id)
+    .maybeSingle()
+
   // Use provider's own keys, fall back to global env vars
   const pk = provider?.konfirma_pk || process.env.KONFIRMA_PUBLIC_KEY
   const sk = provider?.konfirma_sk || process.env.KONFIRMA_SECRET_KEY
