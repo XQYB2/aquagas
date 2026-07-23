@@ -49,6 +49,8 @@ export type ProviderStore = {
   id: string
   store_name: string
   address: string
+  lat: number | null
+  lng: number | null
   service_type: 'water' | 'lpg' | 'both'
   is_open: boolean
   delivery_fee: number
@@ -140,6 +142,8 @@ export function ProviderAuthProvider({ children }: { children: React.ReactNode }
       id: providerRow.id,
       store_name: providerRow.store_name,
       address: providerRow.address,
+      lat: providerRow.lat ?? null,
+      lng: providerRow.lng ?? null,
       service_type: providerRow.service_type,
       is_open: providerRow.is_open,
       delivery_fee: providerRow.delivery_fee,

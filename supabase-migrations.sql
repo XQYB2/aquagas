@@ -198,3 +198,36 @@ ALTER TABLE public.customer_addresses
   ADD COLUMN IF NOT EXISTS lat   double precision,
   ADD COLUMN IF NOT EXISTS lng   double precision,
   ADD COLUMN IF NOT EXISTS label text;
+
+
+-- ============================================================
+-- 014 — Batch delivery slots + orders columns
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS public.delivery_slots (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  provider_id      uuid NOT NULL REFERENCES public.providers(id) ON DELETE CASCADE,
+  day_of_week      int  NOT NULL CHECK (day_of_week BETWEEN 0 AND 6), -- 0=Sun
+  time_hhmm        text NOT NULL, -- e.g. '09:00'
+  max_orders       int  NOT NULL DEFAULT 20,
+  cutoff_minutes   int  NOT NULL DEFAULT 60,
+  is_active        boolean NOT NULL DEFAULT true,
+  created_at       timestamptz DEFAULT now()
+);
+
+ALTER TABLE public.delivery_slots ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Providers manage own slots"
+  ON public.delivery_slots FOR ALL TO authenticated
+  USING (provider_id IN (SELECT id FROM public.providers WHERE user_id = auth.uid()))
+  WITH CHECK (provider_id IN (SELECT id FROM public.providers WHERE user_id = auth.uid()));
+
+CREATE POLICY "Customers can read active slots"
+  ON public.delivery_slots FOR SELECT TO authenticated
+  USING (is_active = true);
+
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS delivery_type text NOT NULL DEFAULT 'standard'
+    CHECK (delivery_type IN ('standard', 'batch')),
+  ADD COLUMN IF NOT EXISTS slot_id      uuid REFERENCES public.delivery_slots(id),
+  ADD COLUMN IF NOT EXISTS scheduled_at timestamptz;

@@ -5,7 +5,7 @@ import { useCart } from '@/lib/cart-context'
 import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, MapPin, Truck, Banknote, CheckCircle, BookmarkPlus, Bookmark, Home, Briefcase, Heart, MoreHorizontal } from 'lucide-react'
+import { ArrowLeft, MapPin, Truck, Banknote, CheckCircle, BookmarkPlus, Bookmark, Home, Briefcase, Heart, MoreHorizontal, Plus, Minus, Trash2, CalendarClock } from 'lucide-react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 
@@ -27,6 +27,9 @@ export default function CheckoutPage() {
   const [error, setError] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'gcash'>('cod')
   const [gcashEnabled, setGcashEnabled] = useState(false)
+  const [deliveryType, setDeliveryType] = useState<'standard' | 'batch'>('standard')
+  const [batchSlots, setBatchSlots] = useState<{ id: string; day_of_week: number; time_hhmm: string; max_orders: number; cutoff_minutes: number }[]>([])
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
   const [savedAddresses, setSavedAddresses] = useState<{ id: string; label: string | null; address: string; lat: number | null; lng: number | null }[]>([])
   const [savingLocation, setSavingLocation] = useState(false)
   const [locationSaved, setLocationSaved] = useState(false)
@@ -71,7 +74,39 @@ export default function CheckoutPage() {
       })
   }, [state.provider_id])
 
-  const isValid = address.trim() && name.trim() && phone.trim() && state.items.length > 0
+  // Load active batch slots for this provider
+  useEffect(() => {
+    if (!state.provider_id) return
+    supabase
+      .from('delivery_slots')
+      .select('id, day_of_week, time_hhmm, max_orders, cutoff_minutes')
+      .eq('provider_id', state.provider_id)
+      .eq('is_active', true)
+      .order('day_of_week')
+      .then(({ data }) => setBatchSlots(data || []))
+  }, [state.provider_id])
+
+  const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+  function nextOccurrence(dayOfWeek: number, timeHhmm: string): Date {
+    const now = new Date()
+    const [h, m] = timeHhmm.split(':').map(Number)
+    const result = new Date(now)
+    result.setHours(h, m, 0, 0)
+    let daysAhead = dayOfWeek - now.getDay()
+    if (daysAhead < 0 || (daysAhead === 0 && result <= now)) daysAhead += 7
+    result.setDate(result.getDate() + daysAhead)
+    return result
+  }
+
+  function slotAvailable(slot: typeof batchSlots[0]): boolean {
+    const next = nextOccurrence(slot.day_of_week, slot.time_hhmm)
+    const cutoff = new Date(next.getTime() - slot.cutoff_minutes * 60000)
+    return new Date() < cutoff
+  }
+
+  const isValid = address.trim() && name.trim() && phone.trim() && state.items.length > 0 &&
+    (deliveryType === 'standard' || (deliveryType === 'batch' && !!selectedSlotId))
 
   const LOCATION_CATEGORIES = [
     { value: 'Home',            icon: Home,           color: 'text-blue-500',  bg: 'bg-blue-50'  },
@@ -106,19 +141,25 @@ export default function CheckoutPage() {
     setLoading(true)
     setError('')
 
+    const isBatch = deliveryType === 'batch' && selectedSlotId
+    const batchSlot = isBatch ? batchSlots.find(s => s.id === selectedSlotId) : null
+    const scheduledAt = batchSlot ? nextOccurrence(batchSlot.day_of_week, batchSlot.time_hhmm).toISOString() : null
+    const orderTotal = isBatch ? subtotal : total  // batch = free delivery
+
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
         customer_id: user.id,
         provider_id: state.provider_id,
-        // GCash orders stay hidden from provider until payment confirmed by webhook
         status: paymentMethod === 'gcash' ? 'pending_payment' : 'placed',
-        total_amount: total,
+        total_amount: orderTotal,
         delivery_address: address,
         delivery_lat: deliveryLat,
         delivery_lng: deliveryLng,
         payment_method: paymentMethod,
         notes,
+        delivery_type: deliveryType,
+        ...(isBatch && { slot_id: selectedSlotId, scheduled_at: scheduledAt }),
       })
       .select()
       .single()
@@ -150,7 +191,7 @@ export default function CheckoutPage() {
       const res = await fetch('/api/payment/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id: order.id }),
+        body: JSON.stringify({ order_id: order.id, amount: orderTotal }),
       })
       let data: any = {}
       try { data = await res.json() } catch { /* empty body — server crashed */ }
@@ -214,11 +255,39 @@ export default function CheckoutPage() {
         {/* Order Summary */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <h2 className="font-semibold text-gray-900 mb-4">Order from {state.provider_name}</h2>
-          <div className="space-y-2 mb-4">
+          <div className="space-y-3 mb-4">
             {state.items.map(item => (
-              <div key={item.id} className="flex justify-between text-sm">
-                <span className="text-gray-600">{item.name} × {item.quantity}</span>
-                <span className="font-semibold text-gray-900">₱{(item.price * item.quantity).toFixed(0)}</span>
+              <div key={item.id} className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">{item.name}</p>
+                  <p className="text-xs text-gray-400">₱{item.price} each</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (item.quantity === 1) {
+                        if (confirm(`Remove "${item.name}" from your cart?`)) {
+                          dispatch({ type: 'UPDATE_QTY', payload: { id: item.id, quantity: 0 } })
+                        }
+                      } else {
+                        dispatch({ type: 'UPDATE_QTY', payload: { id: item.id, quantity: item.quantity - 1 } })
+                      }
+                    }}
+                    className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                  >
+                    {item.quantity === 1 ? <Trash2 className="w-3 h-3 text-red-400" /> : <Minus className="w-3 h-3 text-gray-600" />}
+                  </button>
+                  <span className="w-5 text-center font-bold text-gray-900 text-sm">{item.quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => dispatch({ type: 'UPDATE_QTY', payload: { id: item.id, quantity: item.quantity + 1 } })}
+                    className="w-7 h-7 rounded-lg bg-water-500 text-white flex items-center justify-center hover:bg-water-600 transition-colors"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+                <span className="font-semibold text-gray-900 text-sm w-14 text-right">₱{(item.price * item.quantity).toFixed(0)}</span>
               </div>
             ))}
           </div>
@@ -229,11 +298,13 @@ export default function CheckoutPage() {
             </div>
             <div className="flex justify-between text-sm text-gray-500">
               <span>Delivery fee</span>
-              <span>₱{state.delivery_fee}</span>
+              {deliveryType === 'batch'
+                ? <span className="text-green-600 font-semibold">Free</span>
+                : <span>₱{state.delivery_fee}</span>}
             </div>
             <div className="flex justify-between font-bold text-base text-gray-900 pt-1">
               <span>Total</span>
-              <span>₱{total.toFixed(0)}</span>
+              <span>₱{deliveryType === 'batch' ? subtotal.toFixed(0) : total.toFixed(0)}</span>
             </div>
           </div>
         </div>
@@ -401,6 +472,100 @@ export default function CheckoutPage() {
           </div>
         </div>
 
+        {/* Delivery Type */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <h2 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Truck className="w-4 h-4 text-water-500" />
+            Delivery Type
+          </h2>
+          <div className="space-y-2">
+            {/* Standard */}
+            <button
+              type="button"
+              onClick={() => setDeliveryType('standard')}
+              className={`w-full flex items-center gap-3 rounded-xl p-4 border transition-colors ${
+                deliveryType === 'standard' ? 'bg-water-50 border-water-300' : 'bg-white border-gray-200'
+              }`}
+            >
+              <div className="w-10 h-10 bg-water-50 rounded-xl flex items-center justify-center">
+                <Truck className="w-5 h-5 text-water-600" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="font-semibold text-gray-900 text-sm">Standard Delivery</p>
+                <p className="text-xs text-gray-500">Delivered as soon as available · ₱{state.delivery_fee} fee</p>
+              </div>
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                deliveryType === 'standard' ? 'border-water-500 bg-water-500' : 'border-gray-300'
+              }`}>
+                {deliveryType === 'standard' && <span className="text-white text-xs">✓</span>}
+              </div>
+            </button>
+
+            {/* Batch */}
+            {batchSlots.length > 0 && (
+              <button
+                type="button"
+                onClick={() => { setDeliveryType('batch'); if (!selectedSlotId && batchSlots.length > 0) setSelectedSlotId(batchSlots[0].id) }}
+                className={`w-full flex items-center gap-3 rounded-xl p-4 border transition-colors ${
+                  deliveryType === 'batch' ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200'
+                }`}
+              >
+                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                  <CalendarClock className="w-5 h-5 text-green-600" />
+                </div>
+                <div className="text-left flex-1">
+                  <p className="font-semibold text-gray-900 text-sm">Batch Delivery</p>
+                  <p className="text-xs text-green-700 font-semibold">Free · Scheduled delivery</p>
+                </div>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                  deliveryType === 'batch' ? 'border-green-500 bg-green-500' : 'border-gray-300'
+                }`}>
+                  {deliveryType === 'batch' && <span className="text-white text-xs">✓</span>}
+                </div>
+              </button>
+            )}
+          </div>
+
+          {/* Slot picker */}
+          {deliveryType === 'batch' && batchSlots.length > 0 && (
+            <div className="mt-3 space-y-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Pick a schedule</p>
+              {batchSlots.map(slot => {
+                const next = nextOccurrence(slot.day_of_week, slot.time_hhmm)
+                const available = slotAvailable(slot)
+                const selected = selectedSlotId === slot.id
+                return (
+                  <button
+                    key={slot.id}
+                    type="button"
+                    disabled={!available}
+                    onClick={() => setSelectedSlotId(slot.id)}
+                    className={`w-full flex items-center gap-3 rounded-xl p-3 border text-left transition-colors ${
+                      !available ? 'opacity-40 cursor-not-allowed bg-gray-50 border-gray-100' :
+                      selected ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200 hover:border-green-200'
+                    }`}
+                  >
+                    <CalendarClock className={`w-4 h-4 shrink-0 ${selected ? 'text-green-600' : 'text-gray-400'}`} />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {DAYS[slot.day_of_week]} — {slot.time_hhmm}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {available
+                          ? next.toLocaleDateString('en-PH', { weekday: 'long', month: 'short', day: 'numeric' })
+                          : 'Cutoff passed — try next week'}
+                      </p>
+                    </div>
+                    <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${
+                      selected ? 'border-green-500 bg-green-500' : 'border-gray-300'
+                    }`} />
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
         {/* Payment */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <h2 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -472,9 +637,12 @@ export default function CheckoutPage() {
               </svg>
               Placing Order…
             </span>
-          ) : paymentMethod === 'gcash'
-            ? `Pay with GCash — ₱${total.toFixed(0)}`
-            : `Place Order — ₱${total.toFixed(0)}`}
+          ) : (() => {
+            const amt = deliveryType === 'batch' ? subtotal.toFixed(0) : total.toFixed(0)
+            if (paymentMethod === 'gcash') return `Pay with GCash — ₱${amt}`
+            if (deliveryType === 'batch') return `Schedule Batch Order — ₱${amt}`
+            return `Place Order — ₱${amt}`
+          })()}
         </button>
       </div>
     </div>

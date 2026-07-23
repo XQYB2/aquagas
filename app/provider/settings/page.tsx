@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useProvider } from '@/lib/provider-context'
 import { supabase } from '@/lib/supabase'
 import { Store, Clock, Truck, Phone, MapPin, Star, Save, ToggleLeft, ToggleRight, Droplets, Flame, ImagePlus } from 'lucide-react'
+import dynamic from 'next/dynamic'
+const AddressPicker = dynamic(() => import('@/components/maps/AddressPicker').then(m => m.AddressPicker), { ssr: false })
 
 export default function ProviderSettingsPage() {
   const { store, updateStore } = useProvider()
@@ -43,6 +45,8 @@ export default function ProviderSettingsPage() {
     delivery_time_min: '',
     is_open: true,
   })
+  const [storeLat, setStoreLat] = useState<number | null>(null)
+  const [storeLng, setStoreLng] = useState<number | null>(null)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -59,6 +63,8 @@ export default function ProviderSettingsPage() {
         delivery_time_min: store.delivery_time_min.toString(),
         is_open: store.is_open,
       })
+      setStoreLat(store.lat)
+      setStoreLng(store.lng)
     }
   }, [store])
 
@@ -68,6 +74,8 @@ export default function ProviderSettingsPage() {
     updateStore({
       store_name: form.store_name,
       address: form.address,
+      lat: storeLat,
+      lng: storeLng,
       phone: form.phone,
       description: form.description,
       service_type: form.service_type,
@@ -88,7 +96,9 @@ export default function ProviderSettingsPage() {
     form.service_type !== store.service_type ||
     form.delivery_fee !== store.delivery_fee.toString() ||
     form.delivery_time_min !== store.delivery_time_min.toString() ||
-    form.is_open !== store.is_open
+    form.is_open !== store.is_open ||
+    storeLat !== store.lat ||
+    storeLng !== store.lng
   )
 
   return (
@@ -200,6 +210,26 @@ export default function ProviderSettingsPage() {
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-water-300"
               />
             </div>
+            {/* Store location pin */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                <MapPin className="w-3 h-3" /> Store Location Pin
+              </label>
+              <p className="text-xs text-gray-400 mb-2">Pin your exact store location so nearby customers can find you.</p>
+              {storeLat && storeLng && (
+                <p className="text-xs text-green-600 font-semibold mb-2">✓ Location pinned ({storeLat.toFixed(5)}, {storeLng.toFixed(5)})</p>
+              )}
+              <AddressPicker
+                lat={storeLat}
+                lng={storeLng}
+                onChange={(lat, lng, addr) => {
+                  setStoreLat(lat)
+                  setStoreLng(lng)
+                  setForm(f => ({ ...f, address: addr }))
+                }}
+              />
+            </div>
+
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Store Description</label>
               <textarea

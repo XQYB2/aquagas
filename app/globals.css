@@ -5,7 +5,9 @@
 @import 'leaflet/dist/leaflet.css';
 
 @layer base {
-  :root {
+  /* ── Light (default) ── */
+  :root,
+  [data-theme="light"] {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -26,10 +28,66 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 199 89% 48%;
     --radius: 0.75rem;
+    --nav-bg: 0 0% 100% / 0.8;
+    --surface: 0 0% 100%;
+    --surface-2: 210 40% 97%;
+  }
+
+  /* ── Dark ── */
+  .dark,
+  [data-theme="dark"] {
+    --background: 222 47% 7%;
+    --foreground: 210 40% 96%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 33% 18%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 33% 18%;
+    --muted-foreground: 215 20% 60%;
+    --accent: 217 33% 18%;
+    --accent-foreground: 210 40% 96%;
+    --destructive: 0 63% 45%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --ring: 199 89% 48%;
+    --nav-bg: 222 47% 9% / 0.85;
+    --surface: 222 47% 11%;
+    --surface-2: 222 47% 14%;
+  }
+
+  /* ── Neutral (warm greige) ── */
+  [data-theme="neutral"] {
+    --background: 40 20% 96%;
+    --foreground: 30 15% 15%;
+    --card: 40 20% 99%;
+    --card-foreground: 30 15% 15%;
+    --popover: 40 20% 99%;
+    --popover-foreground: 30 15% 15%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 15% 90%;
+    --secondary-foreground: 30 15% 20%;
+    --muted: 40 15% 90%;
+    --muted-foreground: 30 10% 45%;
+    --accent: 40 15% 90%;
+    --accent-foreground: 30 15% 20%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 35 20% 85%;
+    --input: 35 20% 85%;
+    --ring: 199 89% 48%;
+    --nav-bg: 40 20% 96% / 0.85;
+    --surface: 40 20% 99%;
+    --surface-2: 40 15% 92%;
   }
 
   * { @apply border-border; }
-  body { @apply bg-background text-foreground; }
+  body { @apply bg-background text-foreground transition-colors duration-200; }
 }
 
 @layer utilities {
@@ -37,6 +95,71 @@
     @apply bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded-lg;
   }
 }
+
+/* ─── Dark mode: raw Tailwind color overrides ─── */
+[data-theme="dark"] .bg-white        { background-color: hsl(222 47% 11%) !important; }
+[data-theme="dark"] .bg-white\/80    { background-color: hsl(222 47% 9% / 0.85) !important; }
+[data-theme="dark"] .bg-gray-50      { background-color: hsl(222 47% 14%) !important; }
+[data-theme="dark"] .bg-gray-100     { background-color: hsl(222 47% 17%) !important; }
+[data-theme="dark"] .bg-gray-200     { background-color: hsl(222 47% 20%) !important; }
+
+[data-theme="dark"] .border-gray-50  { border-color: hsl(217 33% 17%) !important; }
+[data-theme="dark"] .border-gray-100 { border-color: hsl(217 33% 20%) !important; }
+[data-theme="dark"] .border-gray-200 { border-color: hsl(217 33% 24%) !important; }
+
+[data-theme="dark"] .text-gray-900   { color: hsl(210 40% 96%) !important; }
+[data-theme="dark"] .text-gray-800   { color: hsl(210 35% 88%) !important; }
+[data-theme="dark"] .text-gray-700   { color: hsl(210 30% 80%) !important; }
+[data-theme="dark"] .text-gray-600   { color: hsl(210 20% 70%) !important; }
+[data-theme="dark"] .text-gray-500   { color: hsl(215 15% 55%) !important; }
+[data-theme="dark"] .text-gray-400   { color: hsl(215 12% 45%) !important; }
+[data-theme="dark"] .text-gray-300   { color: hsl(215 10% 35%) !important; }
+
+/* Inputs & textareas */
+[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background-color: hsl(222 47% 14%) !important;
+  border-color: hsl(217 33% 24%) !important;
+  color: hsl(210 40% 96%) !important;
+}
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder { color: hsl(215 12% 40%) !important; }
+
+/* Navbar */
+[data-theme="dark"] header.sticky { background-color: hsl(222 47% 9%) !important; border-color: hsl(217 33% 18%) !important; }
+
+/* Bottom nav */
+[data-theme="dark"] nav.fixed .bg-white\/80 { background-color: hsl(222 47% 9% / 0.92) !important; }
+[data-theme="dark"] nav.fixed .border-gray-100 { border-color: hsl(217 33% 18%) !important; }
+[data-theme="dark"] nav.fixed { background-color: hsl(222 47% 9% / 0.92); }
+
+/* Hover states */
+[data-theme="dark"] .hover\:bg-gray-50:hover  { background-color: hsl(222 47% 16%) !important; }
+[data-theme="dark"] .hover\:bg-gray-100:hover { background-color: hsl(222 47% 19%) !important; }
+
+/* Red/destructive borders in dark mode */
+[data-theme="dark"] .border-red-100 { border-color: hsl(0 40% 25%) !important; }
+[data-theme="dark"] .hover\:bg-red-50:hover { background-color: hsl(0 40% 15%) !important; }
+
+/* Green states */
+[data-theme="dark"] .bg-green-50  { background-color: hsl(140 30% 12%) !important; }
+[data-theme="dark"] .border-green-100 { border-color: hsl(140 30% 20%) !important; }
+
+/* Blue/water states */
+[data-theme="dark"] .bg-blue-50   { background-color: hsl(213 40% 14%) !important; }
+[data-theme="dark"] .bg-pink-50   { background-color: hsl(330 35% 14%) !important; }
+[data-theme="dark"] .bg-amber-50  { background-color: hsl(38 40% 14%) !important; }
+
+/* Mobile menu dropdown */
+[data-theme="dark"] header .md\:hidden.border-t { background-color: hsl(222 47% 10%) !important; border-color: hsl(217 33% 18%) !important; }
+
+/* ─── Neutral mode overrides ─── */
+[data-theme="neutral"] .bg-white        { background-color: hsl(40 20% 99%) !important; }
+[data-theme="neutral"] .bg-gray-50      { background-color: hsl(40 15% 94%) !important; }
+[data-theme="neutral"] .bg-gray-100     { background-color: hsl(40 15% 90%) !important; }
+[data-theme="neutral"] .border-gray-100 { border-color: hsl(35 20% 87%) !important; }
+[data-theme="neutral"] .border-gray-200 { border-color: hsl(35 20% 83%) !important; }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar { width: 6px; }

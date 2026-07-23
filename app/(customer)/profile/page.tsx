@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { User, Phone, Mail, MapPin, LogOut, Plus, Trash2, ChevronRight, Home, Briefcase, Heart, MoreHorizontal } from 'lucide-react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
+const AddressPicker = dynamic(() => import('@/components/maps/AddressPicker').then(m => m.AddressPicker), { ssr: false })
 
 const CATEGORIES = [
   { value: 'Home',            icon: Home,          color: 'text-blue-500',   bg: 'bg-blue-50'   },
@@ -30,6 +32,8 @@ export default function ProfilePage() {
   const [addingAddr, setAddingAddr] = useState(false)
   const [newAddr, setNewAddr]     = useState('')
   const [newLabel, setNewLabel]   = useState('Home')
+  const [newLat, setNewLat]       = useState<number | null>(null)
+  const [newLng, setNewLng]       = useState<number | null>(null)
   const [saving, setSaving]       = useState(false)
 
   useEffect(() => {
@@ -47,14 +51,20 @@ export default function ProfilePage() {
     setSaving(true)
     const { data, error } = await supabase
       .from('customer_addresses')
-      .insert({ customer_id: user.id, address: newAddr.trim(), label: newLabel })
+      .insert({ customer_id: user.id, address: newAddr.trim(), label: newLabel, lat: newLat, lng: newLng })
       .select('id, label, address, lat, lng')
       .single()
     setSaving(false)
     if (!error && data) {
       setAddresses(a => [...a, data])
+      // Cache first pinned location as user location for store filtering
+      if (newLat && newLng) {
+        localStorage.setItem('aq-user-location', JSON.stringify({ lat: newLat, lng: newLng }))
+      }
       setNewAddr('')
       setNewLabel('Home')
+      setNewLat(null)
+      setNewLng(null)
       setAddingAddr(false)
     }
   }
@@ -176,6 +186,15 @@ export default function ProfilePage() {
                 placeholder="Enter address…"
                 className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-water-300 placeholder:text-gray-400"
               />
+              <AddressPicker
+                lat={newLat}
+                lng={newLng}
+                onChange={(lat, lng, addr) => {
+                  setNewLat(lat)
+                  setNewLng(lng)
+                  if (!newAddr) setNewAddr(addr)
+                }}
+              />
               <button
                 onClick={handleAddAddress}
                 disabled={!newAddr.trim() || saving}
@@ -199,7 +218,10 @@ export default function ProfilePage() {
                       <Icon className={`w-4 h-4 ${cat.color}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-gray-500">{addr.label || 'Saved'}</p>
+                      <p className="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                        {addr.label || 'Saved'}
+                        {addr.lat && addr.lng && <span className="text-green-500 text-[10px]">📍 pinned</span>}
+                      </p>
                       <p className="text-sm text-gray-700 truncate">{addr.address}</p>
                     </div>
                     <button onClick={() => handleDeleteAddress(addr.id)} className="text-gray-300 hover:text-red-400 transition-colors shrink-0">

@@ -36,20 +36,11 @@ export async function POST(req: NextRequest) {
     .eq('id', (order as any).provider_id)
     .maybeSingle()
 
-  console.log('[payment/create] provider_id:', (order as any).provider_id)
-  console.log('[payment/create] provider row:', JSON.stringify(provider))
-  console.log('[payment/create] provider error:', providerError?.message)
-
   // Use provider's own keys, fall back to global env vars
   const pk = provider?.konfirma_pk || process.env.KONFIRMA_PUBLIC_KEY
   const sk = provider?.konfirma_sk || process.env.KONFIRMA_SECRET_KEY
   const walletId = provider?.konfirma_wallet_id || process.env.KONFIRMA_WALLET_ACCOUNT_ID
   const baseUrl = process.env.KONFIRMA_BASE_URL
-
-  console.log('[payment/create] pk:', pk ? pk.slice(0, 8) + '…' : 'MISSING')
-  console.log('[payment/create] sk:', sk ? sk.slice(0, 8) + '…' : 'MISSING')
-  console.log('[payment/create] walletId:', walletId ?? 'MISSING')
-  console.log('[payment/create] baseUrl:', baseUrl ?? 'MISSING')
 
   if (!pk || !sk || !walletId || !baseUrl) {
     return NextResponse.json({ error: 'GCash payment is not configured for this store yet.' }, { status: 503 })

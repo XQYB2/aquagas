@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, ShoppingBag, Package, Settings, Wallet,
-  Droplets, LogOut, Menu, X, Flame,
+  Droplets, LogOut, Menu, X, Flame, CalendarClock,
 } from 'lucide-react'
 import { useProvider } from '@/lib/provider-context'
 import { useState } from 'react'
@@ -14,6 +14,7 @@ const NAV = [
   { href: '/provider/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/provider/orders', icon: ShoppingBag, label: 'Orders' },
   { href: '/provider/products', icon: Package, label: 'Products' },
+  { href: '/provider/slots', icon: CalendarClock, label: 'Batch Slots' },
   { href: '/provider/wallet', icon: Wallet, label: 'Wallet' },
   { href: '/provider/settings', icon: Settings, label: 'Settings' },
 ]

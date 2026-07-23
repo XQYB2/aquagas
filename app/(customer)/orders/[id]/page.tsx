@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import { StatusStepper, StatusBadge } from '@/components/customer/StatusBadge'
-import { ArrowLeft, MapPin, Phone, Banknote, AlertCircle, Star } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, Banknote, AlertCircle, Star, CalendarClock, Truck } from 'lucide-react'
 import Link from 'next/link'
 
 type Order = {
@@ -21,6 +21,8 @@ type Order = {
   service_type: 'water' | 'lpg' | 'both' | null
   payment_method: string | null
   payment_status: 'unpaid' | 'pending' | 'paid' | null
+  delivery_type: 'standard' | 'batch'
+  scheduled_at: string | null
   items: { id: string; product_name: string; quantity: number; unit_price: number }[]
 }
 
@@ -50,7 +52,7 @@ export default function OrderDetailPage() {
       setLoading(true)
       const { data: o } = await supabase
         .from('orders')
-        .select('id, status, total_amount, delivery_address, estimated_delivery, payment_method, payment_status, created_at, provider_id, providers(store_name, delivery_fee, service_type)')
+        .select('id, status, total_amount, delivery_address, estimated_delivery, payment_method, payment_status, delivery_type, scheduled_at, created_at, provider_id, providers(store_name, delivery_fee, service_type)')
         .eq('id', id)
         .single()
 
@@ -79,6 +81,8 @@ export default function OrderDetailPage() {
         service_type: op.providers?.service_type || null,
         payment_method: op.payment_method || null,
         payment_status: op.payment_status || null,
+        delivery_type: op.delivery_type || 'standard',
+        scheduled_at: op.scheduled_at || null,
         items: (items || []).map((i: any) => ({
           id: i.id, product_name: i.products?.name || 'Item', quantity: i.quantity, unit_price: i.unit_price,
         })),
@@ -274,6 +278,50 @@ export default function OrderDetailPage() {
           <p className="text-gray-600 text-sm">{order.delivery_address}</p>
         </div>
 
+        {/* Delivery Type */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          {order.delivery_type === 'batch' ? (
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center shrink-0">
+                <CalendarClock className="w-4 h-4 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <p className="text-sm font-semibold text-gray-900">Batch Delivery</p>
+                  <span className="text-[11px] font-semibold bg-green-50 border border-green-100 text-green-700 px-2 py-0.5 rounded-full">Free</span>
+                </div>
+                {order.scheduled_at ? (
+                  <p className="text-sm text-gray-600">
+                    Scheduled for{' '}
+                    <span className="font-semibold text-gray-800">
+                      {new Date(order.scheduled_at).toLocaleDateString('en-PH', {
+                        weekday: 'long', month: 'long', day: 'numeric',
+                      })}
+                    </span>
+                    {' at '}
+                    <span className="font-semibold text-gray-800">
+                      {new Date(order.scheduled_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-400">Schedule TBD</p>
+                )}
+                <p className="text-xs text-gray-400 mt-1">Your order will be delivered together with others in the same time slot.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-water-50 rounded-xl flex items-center justify-center shrink-0">
+                <Truck className="w-4 h-4 text-water-500" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Standard Delivery</p>
+                <p className="text-xs text-gray-400 mt-0.5">Delivered as soon as the store processes your order.</p>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Order Items */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <h2 className="font-semibold text-gray-900 mb-4 text-sm">Order Items</h2>
@@ -288,7 +336,9 @@ export default function OrderDetailPage() {
           <div className="border-t border-gray-100 pt-3 space-y-1.5">
             <div className="flex justify-between text-sm text-gray-500">
               <span>Delivery fee</span>
-              <span>₱{order.delivery_fee}</span>
+              {order.delivery_type === 'batch'
+                ? <span className="text-green-600 font-semibold">Free</span>
+                : <span>₱{order.delivery_fee}</span>}
             </div>
             <div className="flex justify-between font-bold text-base text-gray-900">
               <span>Total</span>

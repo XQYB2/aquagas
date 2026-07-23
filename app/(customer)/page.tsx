@@ -1,20 +1,41 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import { Search, Droplets, Flame, Sparkles, ChevronRight } from 'lucide-react'
+import { Search, Droplets, Flame, Sparkles, MapPin, LocateFixed, ChevronRight } from 'lucide-react'
 import { ProviderCard } from '@/components/customer/ProviderCard'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/lib/auth-context'
 import type { Database } from '@/lib/supabase'
+import Link from 'next/link'
 
 type Provider = Database['public']['Tables']['providers']['Row']
-
 type FilterType = 'all' | 'water' | 'lpg'
 
+const RADIUS_KM = 15
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
 export default function HomePage() {
+  const { user } = useAuth()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<FilterType>('all')
   const [allProviders, setAllProviders] = useState<Provider[]>([])
   const [loading, setLoading] = useState(true)
+
+  // User location state
+  const [userLat, setUserLat] = useState<number | null>(null)
+  const [userLng, setUserLng] = useState<number | null>(null)
+  const [locating, setLocating] = useState(false)
+  const [locationReady, setLocationReady] = useState(false)
 
   // If Supabase redirects a password recovery token to the home page, forward to /auth/reset
   useEffect(() => {
@@ -23,6 +44,7 @@ export default function HomePage() {
     }
   }, [])
 
+  // Load providers
   useEffect(() => {
     supabase
       .from('providers')
@@ -34,19 +56,69 @@ export default function HomePage() {
       })
   }, [])
 
+  // Load saved location from customer_addresses or localStorage
+  useEffect(() => {
+    const cached = localStorage.getItem('aq-user-location')
+    if (cached) {
+      try {
+        const { lat, lng } = JSON.parse(cached)
+        setUserLat(lat); setUserLng(lng); setLocationReady(true)
+      } catch {}
+    }
+    // Also try to load from saved addresses if logged in
+    if (user) {
+      supabase
+        .from('customer_addresses')
+        .select('lat, lng')
+        .eq('customer_id', user.id)
+        .not('lat', 'is', null)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .then(({ data }) => {
+          if (data?.[0]?.lat && data?.[0]?.lng && !cached) {
+            const { lat, lng } = data[0]
+            setUserLat(lat); setUserLng(lng); setLocationReady(true)
+            localStorage.setItem('aq-user-location', JSON.stringify({ lat, lng }))
+          }
+        })
+    }
+  }, [user])
+
+  function handleLocate() {
+    if (!navigator.geolocation) return
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const { latitude: lat, longitude: lng } = pos.coords
+        setUserLat(lat); setUserLng(lng); setLocationReady(true)
+        localStorage.setItem('aq-user-location', JSON.stringify({ lat, lng }))
+        setLocating(false)
+      },
+      () => setLocating(false),
+      { timeout: 10000 }
+    )
+  }
+
   const providers = useMemo(() => {
-    return allProviders.filter(p => {
-      const matchesType =
-        filter === 'all' ||
-        p.service_type === filter ||
-        p.service_type === 'both'
-      const matchesQuery =
-        !query ||
-        p.store_name.toLowerCase().includes(query.toLowerCase()) ||
-        p.address.toLowerCase().includes(query.toLowerCase())
-      return matchesType && matchesQuery
-    })
-  }, [query, filter, allProviders])
+    if (!locationReady || userLat == null || userLng == null) return []
+
+    return allProviders
+      .filter(p => {
+        if (!p.lat || !p.lng) return false
+        const dist = haversineKm(userLat, userLng, p.lat, p.lng)
+        if (dist > RADIUS_KM) return false
+        const matchesType = filter === 'all' || p.service_type === filter || p.service_type === 'both'
+        const matchesQuery = !query ||
+          p.store_name.toLowerCase().includes(query.toLowerCase()) ||
+          p.address.toLowerCase().includes(query.toLowerCase())
+        return matchesType && matchesQuery
+      })
+      .sort((a, b) => {
+        const dA = haversineKm(userLat, userLng, a.lat!, a.lng!)
+        const dB = haversineKm(userLat, userLng, b.lat!, b.lng!)
+        return dA - dB
+      })
+  }, [query, filter, allProviders, userLat, userLng, locationReady])
 
   return (
     <div>
@@ -68,8 +140,6 @@ export default function HomePage() {
             <p className="text-white/80 text-base md:text-lg mb-8">
               Order from local water refilling stations and LPG suppliers — fast, safe, and hassle-free.
             </p>
-
-            {/* Search Bar */}
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
@@ -82,8 +152,6 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-
-        {/* Wave divider */}
         <div className="absolute bottom-0 left-0 right-0">
           <svg viewBox="0 0 1440 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
             <path d="M0 40L1440 40L1440 10C1320 35 1080 0 720 20C360 40 120 5 0 20L0 40Z" fill="rgb(249 250 251)" />
@@ -91,14 +159,62 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Content */}
       <div className="max-w-6xl mx-auto px-4 py-8">
+
+        {/* Location banner */}
+        {!locationReady ? (
+          <div className="mb-6 bg-white border border-gray-100 rounded-2xl p-5 flex items-start gap-4 shadow-sm">
+            <div className="w-10 h-10 bg-water-50 rounded-xl flex items-center justify-center shrink-0">
+              <MapPin className="w-5 h-5 text-water-500" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-gray-900 text-sm">Set your location to see nearby stores</p>
+              <p className="text-xs text-gray-400 mt-0.5 mb-3">We'll show stores within {RADIUS_KM} km of you.</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={handleLocate}
+                  disabled={locating}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-water-500 hover:bg-water-600 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
+                >
+                  <LocateFixed className="w-4 h-4" />
+                  {locating ? 'Locating…' : 'Use my location'}
+                </button>
+                {user && (
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-1.5 px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
+                  >
+                    Use saved address
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-4 flex items-center gap-2">
+            <div className="flex items-center gap-1.5 text-xs text-green-600 font-semibold bg-green-50 border border-green-100 px-3 py-1.5 rounded-full">
+              <MapPin className="w-3 h-3" />
+              Showing stores within {RADIUS_KM} km
+            </div>
+            <button
+              onClick={() => {
+                localStorage.removeItem('aq-user-location')
+                setUserLat(null); setUserLng(null); setLocationReady(false)
+              }}
+              className="text-xs text-gray-400 hover:text-gray-600 underline"
+            >
+              Change
+            </button>
+          </div>
+        )}
+
         {/* Category Filters */}
         <div className="flex gap-3 mb-8">
           {[
-            { key: 'all' as FilterType, label: 'All', icon: null },
-            { key: 'water' as FilterType, label: '💧 Water Refill', icon: null },
-            { key: 'lpg' as FilterType, label: '🔥 LPG Gas', icon: null },
+            { key: 'all' as FilterType, label: 'All' },
+            { key: 'water' as FilterType, label: '💧 Water Refill' },
+            { key: 'lpg' as FilterType, label: '🔥 LPG Gas' },
           ].map(tab => (
             <button
               key={tab.key}
@@ -118,57 +234,25 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* Stats bar */}
-        <div className="flex flex-wrap gap-4 mb-8">
-          <div className="flex items-center gap-3 bg-water-50 rounded-xl px-4 py-3">
-            <div className="w-8 h-8 bg-water-100 rounded-lg flex items-center justify-center">
-              <Droplets className="w-4 h-4 text-water-600" />
-            </div>
-            <div>
-              <p className="text-xs text-water-600 font-medium">Water Stations</p>
-              <p className="text-lg font-bold text-water-700">
-                {allProviders.filter(p => p.service_type === 'water' || p.service_type === 'both').length}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 bg-lpg-50 rounded-xl px-4 py-3">
-            <div className="w-8 h-8 bg-lpg-100 rounded-lg flex items-center justify-center">
-              <Flame className="w-4 h-4 text-lpg-600" />
-            </div>
-            <div>
-              <p className="text-xs text-lpg-600 font-medium">LPG Suppliers</p>
-              <p className="text-lg font-bold text-lpg-700">
-                {allProviders.filter(p => p.service_type === 'lpg' || p.service_type === 'both').length}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 bg-green-50 rounded-xl px-4 py-3">
-            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-              <span className="text-green-600 text-xs font-bold">✓</span>
-            </div>
-            <div>
-              <p className="text-xs text-green-600 font-medium">Open Now</p>
-              <p className="text-lg font-bold text-green-700">
-                {allProviders.filter(p => p.is_open).length}
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Providers Grid */}
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900">
-            {filter === 'all' ? 'All Stores' : filter === 'water' ? 'Water Refilling Stations' : 'LPG Gas Suppliers'}
-            <span className="text-gray-400 font-normal text-sm ml-2">({providers.length})</span>
+            {filter === 'all' ? 'Nearby Stores' : filter === 'water' ? 'Water Refilling Stations' : 'LPG Gas Suppliers'}
+            {locationReady && <span className="text-gray-400 font-normal text-sm ml-2">({providers.length})</span>}
           </h2>
         </div>
 
         {loading ? (
           <div className="text-center py-20 text-gray-400 text-sm">Loading stores…</div>
+        ) : !locationReady ? (
+          <div className="text-center py-20">
+            <p className="text-5xl mb-4">📍</p>
+            <p className="text-gray-500 font-medium">Set your location above to see nearby stores.</p>
+          </div>
         ) : providers.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-4xl mb-4">🔍</p>
-            <p className="text-gray-500 font-medium">No stores match your search.</p>
+            <p className="text-gray-500 font-medium">No stores within {RADIUS_KM} km of your location.</p>
             <button onClick={() => { setQuery(''); setFilter('all') }} className="mt-4 text-water-500 font-semibold text-sm hover:underline">
               Clear filters
             </button>
