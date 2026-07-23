@@ -103,7 +103,7 @@ export default function ProviderSlotsPage() {
 
     if (!orderRows || orderRows.length === 0) { setBatchOrders(b => ({ ...b, [slotId]: [] })); return }
 
-    const customerIds = [...new Set(orderRows.map((o: any) => o.customer_id))]
+    const customerIds = Array.from(new Set(orderRows.map((o: any) => o.customer_id)))
     const orderIds = orderRows.map((o: any) => o.id)
 
     const [{ data: profiles }, { data: items }] = await Promise.all([
