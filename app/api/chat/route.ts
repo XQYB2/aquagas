@@ -97,10 +97,11 @@ export async function OPTIONS() {
 const MODEL_FALLBACKS = [
   'gemini-2.0-flash-lite',
   'gemini-2.5-flash-lite',
-  'gemini-3.1-flash-lite',  // per screenshot: 0/15 RPM free
-  'gemini-3.5-flash-lite',  // per screenshot: 0/15 RPM free
+  'gemini-3.1-flash-lite',
+  'gemini-3.5-flash-lite',
   'gemini-2.5-flash',
   'gemini-3.5-flash',
+  'gemini-3.6-flash',
 ]
 
 function isRateLimitError(err: any): boolean {
