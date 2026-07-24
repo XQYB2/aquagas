@@ -93,6 +93,27 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS })
 }
 
+// Fallback chain: cheapest first, escalate on rate limit (429)
+const MODEL_FALLBACKS = [
+  'gemini-2.0-flash-lite',
+  'gemini-2.5-flash-lite',
+  'gemini-3.1-flash-lite',  // per screenshot: 0/15 RPM free
+  'gemini-3.5-flash-lite',  // per screenshot: 0/15 RPM free
+  'gemini-2.5-flash',
+  'gemini-3.5-flash',
+]
+
+function isRateLimitError(err: any): boolean {
+  const msg = err?.message || ''
+  return (
+    err?.status === 429 ||
+    msg.includes('429') ||
+    msg.includes('quota') ||
+    msg.includes('rate limit') ||
+    msg.includes('RESOURCE_EXHAUSTED')
+  )
+}
+
 export async function POST(req: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
@@ -109,10 +130,6 @@ export async function POST(req: NextRequest) {
     const context = await getContext(lastMessage.content, userId)
 
     const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash-lite',
-      systemInstruction: SYSTEM_PROMPT,
-    })
 
     const history = messages.slice(0, -1).map((m: { role: string; content: string }) => ({
       role: m.role === 'assistant' ? 'model' : 'user',
@@ -123,10 +140,33 @@ export async function POST(req: NextRequest) {
       ...history,
       { role: 'user', parts: [{ text: context + lastMessage.content }] },
     ]
-    const result = await model.generateContent({ contents })
-    const text = result.response.text()
 
-    return NextResponse.json({ reply: text }, { headers: CORS_HEADERS })
+    let lastErr: any
+    for (const modelName of MODEL_FALLBACKS) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          systemInstruction: SYSTEM_PROMPT,
+        })
+        const result = await model.generateContent({ contents })
+        const text = result.response.text()
+        console.log(`[AquaBot] responded with ${modelName}`)
+        return NextResponse.json({ reply: text }, { headers: CORS_HEADERS })
+      } catch (err: any) {
+        if (isRateLimitError(err)) {
+          console.warn(`[AquaBot] ${modelName} rate limited, trying next model`)
+          lastErr = err
+          continue
+        }
+        throw err
+      }
+    }
+
+    console.error('[AquaBot] all models rate limited:', lastErr?.message)
+    return NextResponse.json(
+      { error: 'AquaBot is busy right now. Please try again in a moment.' },
+      { status: 429, headers: CORS_HEADERS }
+    )
   } catch (err: any) {
     console.error('[AquaBot]', err?.message)
     return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500, headers: CORS_HEADERS })
