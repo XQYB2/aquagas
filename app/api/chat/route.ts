@@ -83,16 +83,26 @@ async function getContext(userMessage: string, userId?: string): Promise<string>
   return parts.length > 0 ? `CONTEXT (live data from database):\n${parts.join('\n\n')}\n\n` : ''
 }
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS })
+}
+
 export async function POST(req: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
-    return NextResponse.json({ error: 'AI assistant is not configured yet.' }, { status: 503 })
+    return NextResponse.json({ error: 'AI assistant is not configured yet.' }, { status: 503, headers: CORS_HEADERS })
   }
 
   try {
     const { messages, userId } = await req.json()
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json({ error: 'Invalid request.' }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid request.' }, { status: 400, headers: CORS_HEADERS })
     }
 
     const lastMessage = messages[messages.length - 1]
@@ -100,7 +110,7 @@ export async function POST(req: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({
-      model: 'gemini-3.1-flash-lite',
+      model: 'gemini-2.0-flash-lite',
       systemInstruction: SYSTEM_PROMPT,
     })
 
@@ -116,9 +126,9 @@ export async function POST(req: NextRequest) {
     const result = await model.generateContent({ contents })
     const text = result.response.text()
 
-    return NextResponse.json({ reply: text })
+    return NextResponse.json({ reply: text }, { headers: CORS_HEADERS })
   } catch (err: any) {
     console.error('[AquaBot]', err?.message)
-    return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
+    return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500, headers: CORS_HEADERS })
   }
 }
