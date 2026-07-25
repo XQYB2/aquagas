@@ -48,7 +48,7 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.GEMINI_API_KEY
+  const apiKey = process.env.GEMINI_API_KEY_PROVIDER || process.env.GEMINI_API_KEY
   if (!apiKey) {
     return NextResponse.json({ error: 'AI assistant is not configured yet.' }, { status: 503, headers: CORS_HEADERS })
   }
