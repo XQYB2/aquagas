@@ -170,40 +170,43 @@ export default function LoginPage() {
         </p>
 
         {/* App downloads */}
-        <div className="mt-8 pt-6 border-t border-gray-100">
-          <p className="text-center text-xs text-gray-400 font-medium uppercase tracking-wide mb-4">Get the app</p>
-          <div className="space-y-2">
-            {/* Customer app */}
-            <div className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100">
-              <img src="/logo.svg" alt="AquaGas" className="w-10 h-10 rounded-xl shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-800"><span className="text-water-600">Aqua</span><span className="text-red-600">Gas</span> Customer</p>
-                <p className="text-xs text-gray-400">Order water & gas on your phone</p>
-              </div>
-              <a
-                href="#"
-                className="shrink-0 text-xs font-bold text-water-600 bg-water-50 hover:bg-water-100 border border-water-200 px-3 py-1.5 rounded-xl transition-colors"
-              >
-                Download
-              </a>
-            </div>
-
-            {/* Provider app */}
-            <div className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100">
-              <img src="/logo.svg" alt="AquaGas" className="w-10 h-10 rounded-xl shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-800"><span className="text-water-600">Aqua</span><span className="text-red-600">Gas</span> Provider</p>
-                <p className="text-xs text-gray-400">Manage your store & deliveries</p>
-              </div>
-              <a
-                href="#"
-                className="shrink-0 text-xs font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-3 py-1.5 rounded-xl transition-colors"
-              >
-                Download
-              </a>
+        {(process.env.NEXT_PUBLIC_CUSTOMER_APP_URL || process.env.NEXT_PUBLIC_PROVIDER_APP_URL) && (
+          <div className="mt-8 pt-6 border-t border-gray-100">
+            <p className="text-center text-xs text-gray-400 font-medium uppercase tracking-wide mb-4">Get the app</p>
+            <div className="space-y-2">
+              {process.env.NEXT_PUBLIC_CUSTOMER_APP_URL && (
+                <div className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100">
+                  <img src="/logo.svg" alt="AquaGas" className="w-10 h-10 rounded-xl shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-800"><span className="text-water-600">Aqua</span><span className="text-red-600">Gas</span> Customer</p>
+                    <p className="text-xs text-gray-400">Order water & gas on your phone</p>
+                  </div>
+                  <a
+                    href={process.env.NEXT_PUBLIC_CUSTOMER_APP_URL}
+                    className="shrink-0 text-xs font-bold text-water-600 bg-water-50 hover:bg-water-100 border border-water-200 px-3 py-1.5 rounded-xl transition-colors"
+                  >
+                    Download
+                  </a>
+                </div>
+              )}
+              {process.env.NEXT_PUBLIC_PROVIDER_APP_URL && (
+                <div className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100">
+                  <img src="/logo.svg" alt="AquaGas" className="w-10 h-10 rounded-xl shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-800"><span className="text-water-600">Aqua</span><span className="text-red-600">Gas</span> Provider</p>
+                    <p className="text-xs text-gray-400">Manage your store & deliveries</p>
+                  </div>
+                  <a
+                    href={process.env.NEXT_PUBLIC_PROVIDER_APP_URL}
+                    className="shrink-0 text-xs font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-3 py-1.5 rounded-xl transition-colors"
+                  >
+                    Download
+                  </a>
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
