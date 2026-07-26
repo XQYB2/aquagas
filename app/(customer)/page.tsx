@@ -49,7 +49,7 @@ export default function HomePage() {
     supabase
       .from('providers')
       .select('*')
-      .eq('approval_status', 'active')
+      .in('approval_status', ['active', 'approved'])
       .then(({ data }) => {
         setAllProviders(data || [])
         setLoading(false)

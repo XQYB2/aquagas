@@ -35,6 +35,7 @@ export default function CheckoutPage() {
   const [locationSaved, setLocationSaved] = useState(false)
   const [showLabelPicker, setShowLabelPicker] = useState(false)
   const [pendingLabel, setPendingLabel] = useState('Home')
+  const [storeCoord, setStoreCoord] = useState<{ lat: number; lng: number } | null>(null)
 
   useEffect(() => {
     if (profile?.full_name) setName(profile.full_name)
@@ -64,10 +65,11 @@ export default function CheckoutPage() {
     if (!state.provider_id) return
     supabase
       .from('providers')
-      .select('konfirma_pk, konfirma_sk, konfirma_wallet_id')
+      .select('konfirma_pk, konfirma_sk, konfirma_wallet_id, lat, lng')
       .eq('id', state.provider_id)
       .single()
       .then(({ data }) => {
+        if (data?.lat && data?.lng) setStoreCoord({ lat: data.lat, lng: data.lng })
         const enabled = !!(data?.konfirma_pk && data?.konfirma_sk && data?.konfirma_wallet_id)
         setGcashEnabled(enabled)
         if (!enabled) setPaymentMethod('cod')
@@ -105,7 +107,8 @@ export default function CheckoutPage() {
     return new Date() < cutoff
   }
 
-  const isValid = address.trim() && name.trim() && phone.trim() && state.items.length > 0 &&
+  const hasPhone = !!profile?.phone
+  const isValid = hasPhone && address.trim() && name.trim() && phone.trim() && state.items.length > 0 &&
     (deliveryType === 'standard' || (deliveryType === 'batch' && !!selectedSlotId))
 
   const LOCATION_CATEGORIES = [
@@ -251,6 +254,19 @@ export default function CheckoutPage() {
         <h1 className="text-xl font-bold text-gray-900">Checkout</h1>
       </div>
 
+      {!hasPhone && (
+        <Link href="/profile" className="flex items-center gap-3 bg-red-600 text-white rounded-2xl px-4 py-3 mb-4 hover:bg-red-700 transition-colors">
+          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <MapPin className="w-4 h-4" />
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-sm">Phone number required</p>
+            <p className="text-xs text-red-100">Add your mobile number in your profile to place orders. Click here.</p>
+          </div>
+          <ArrowLeft className="w-4 h-4 rotate-180 shrink-0" />
+        </Link>
+      )}
+
       <div className="space-y-4">
         {/* Order Summary */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -388,6 +404,7 @@ export default function CheckoutPage() {
               <AddressPicker
                 lat={deliveryLat}
                 lng={deliveryLng}
+                storeCoord={storeCoord}
                 onChange={(lat, lng, addr) => {
                   setDeliveryLat(lat)
                   setDeliveryLng(lng)

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Droplets, Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 
 export default function LoginPage() {
@@ -79,11 +79,9 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-water-500 to-water-700 flex items-center justify-center mx-auto mb-4">
-            <Droplets className="w-7 h-7 text-white" />
-          </div>
+          <img src="/logo.svg" alt="AquaGas" className="w-14 h-14 rounded-2xl mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-          <p className="text-gray-500 text-sm mt-1">Sign in to your AquaGas account</p>
+          <p className="text-gray-500 text-sm mt-1">Sign in to your <span className="text-water-600 font-semibold">Aqua</span><span className="text-red-600 font-semibold">Gas</span> account</p>
         </div>
 
         <button
@@ -170,6 +168,42 @@ export default function LoginPage() {
           Don't have an account?{' '}
           <Link href="/register" className="text-water-600 font-semibold hover:underline">Register</Link>
         </p>
+
+        {/* App downloads */}
+        <div className="mt-8 pt-6 border-t border-gray-100">
+          <p className="text-center text-xs text-gray-400 font-medium uppercase tracking-wide mb-4">Get the app</p>
+          <div className="space-y-2">
+            {/* Customer app */}
+            <div className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100">
+              <img src="/logo.svg" alt="AquaGas" className="w-10 h-10 rounded-xl shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-800"><span className="text-water-600">Aqua</span><span className="text-red-600">Gas</span> Customer</p>
+                <p className="text-xs text-gray-400">Order water & gas on your phone</p>
+              </div>
+              <a
+                href="#"
+                className="shrink-0 text-xs font-bold text-water-600 bg-water-50 hover:bg-water-100 border border-water-200 px-3 py-1.5 rounded-xl transition-colors"
+              >
+                Download
+              </a>
+            </div>
+
+            {/* Provider app */}
+            <div className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100">
+              <img src="/logo.svg" alt="AquaGas" className="w-10 h-10 rounded-xl shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-800"><span className="text-water-600">Aqua</span><span className="text-red-600">Gas</span> Provider</p>
+                <p className="text-xs text-gray-400">Manage your store & deliveries</p>
+              </div>
+              <a
+                href="#"
+                className="shrink-0 text-xs font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-3 py-1.5 rounded-xl transition-colors"
+              >
+                Download
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

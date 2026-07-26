@@ -35,12 +35,10 @@ export function AdminSidebar() {
     <>
       {/* Logo */}
       <div className="h-16 flex items-center px-5 border-b border-gray-800">
-        <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center mr-3">
-          <Shield className="w-4 h-4 text-white" />
-        </div>
+        <img src="/logo.svg" alt="AquaGas" className="w-9 h-9 rounded-xl mr-3 shrink-0" />
         <div>
           <p className="text-xs text-gray-500 font-medium">Admin Panel</p>
-          <p className="text-sm font-bold text-white leading-tight">AquaGas</p>
+          <p className="text-sm font-bold leading-tight"><span className="text-blue-300">Aqua</span><span className="text-red-400">Gas</span></p>
         </div>
       </div>
 

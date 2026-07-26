@@ -3,7 +3,6 @@
 import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { Droplets } from 'lucide-react'
 
 // Pages that don't require a login
 const PUBLIC_PATHS = ['/login', '/register', '/reset-password']
@@ -27,11 +26,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-water-500 to-water-700 flex items-center justify-center">
-            <Droplets className="w-6 h-6 text-white" />
-          </div>
-          <div className="w-6 h-6 border-2 border-water-500 border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col items-center gap-4">
+          <img src="/logo.svg" alt="AquaGas" className="w-16 h-16 rounded-2xl shadow-lg" />
+          <div className="w-5 h-5 border-2 border-water-500 border-t-transparent rounded-full animate-spin" />
         </div>
       </div>
     )

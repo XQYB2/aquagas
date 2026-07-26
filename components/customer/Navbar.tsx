@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ShoppingCart, User, Droplets, Menu, X, Sun, Moon } from 'lucide-react'
+import { ShoppingCart, User, Menu, X, Sun, Moon } from 'lucide-react'
 import { useCart } from '@/lib/cart-context'
 import { useAuth } from '@/lib/auth-context'
 import { useState } from 'react'
@@ -32,10 +32,8 @@ export function Navbar() {
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-water-500 to-water-700 flex items-center justify-center">
-            <Droplets className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-gray-900 dark:text-gray-100">Aqua<span className="text-lpg-500">Gas</span></span>
+          <img src="/logo.svg" alt="AquaGas" className="w-9 h-9 rounded-xl" />
+          <span><span className="text-water-600 dark:text-water-400">Aqua</span><span className="text-red-600">Gas</span></span>
         </Link>
 
         {/* Desktop Nav */}

@@ -94,24 +94,29 @@ export async function OPTIONS() {
 }
 
 // Fallback chain: cheapest first, escalate on rate limit (429)
+// Only models confirmed to have quota on this API key
 const MODEL_FALLBACKS = [
-  'gemini-2.0-flash-lite',
   'gemini-2.5-flash-lite',
   'gemini-3.1-flash-lite',
   'gemini-3.5-flash-lite',
   'gemini-2.5-flash',
+  'gemini-3-flash',
   'gemini-3.5-flash',
   'gemini-3.6-flash',
 ]
 
-function isRateLimitError(err: any): boolean {
-  const msg = err?.message || ''
+function isRetryableError(err: any): boolean {
+  const msg = (err?.message || '').toLowerCase()
   return (
     err?.status === 429 ||
+    err?.status === 404 ||
     msg.includes('429') ||
     msg.includes('quota') ||
     msg.includes('rate limit') ||
-    msg.includes('RESOURCE_EXHAUSTED')
+    msg.includes('resource_exhausted') ||
+    msg.includes('not found') ||
+    msg.includes('does not exist') ||
+    msg.includes('invalid model')
   )
 }
 
@@ -154,8 +159,8 @@ export async function POST(req: NextRequest) {
         console.log(`[AquaBot] responded with ${modelName}`)
         return NextResponse.json({ reply: text }, { headers: CORS_HEADERS })
       } catch (err: any) {
-        if (isRateLimitError(err)) {
-          console.warn(`[AquaBot] ${modelName} rate limited, trying next model`)
+        if (isRetryableError(err)) {
+          console.warn(`[AquaBot] ${modelName} skipped: ${err?.message?.slice(0, 80)}`)
           lastErr = err
           continue
         }

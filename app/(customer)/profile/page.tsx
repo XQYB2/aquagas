@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { User, Phone, Mail, MapPin, LogOut, Plus, Trash2, ChevronRight, Home, Briefcase, Heart, MoreHorizontal } from 'lucide-react'
+import { User, Phone, Mail, MapPin, LogOut, Plus, Trash2, ChevronRight, Home, Briefcase, Heart, MoreHorizontal, Pencil, Check, X } from 'lucide-react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 const AddressPicker = dynamic(() => import('@/components/maps/AddressPicker').then(m => m.AddressPicker), { ssr: false })
@@ -35,6 +35,25 @@ export default function ProfilePage() {
   const [newLat, setNewLat]       = useState<number | null>(null)
   const [newLng, setNewLng]       = useState<number | null>(null)
   const [saving, setSaving]       = useState(false)
+
+  // inline editing
+  const [editingName, setEditingName] = useState(false)
+  const [editingPhone, setEditingPhone] = useState(false)
+  const [nameVal, setNameVal] = useState('')
+  const [phoneVal, setPhoneVal] = useState('')
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [profileError, setProfileError] = useState('')
+
+  async function saveField(field: 'full_name' | 'phone', value: string) {
+    if (!user) return
+    setSavingProfile(true)
+    setProfileError('')
+    const { error } = await supabase.from('profiles').update({ [field]: value.trim() }).eq('id', user.id)
+    setSavingProfile(false)
+    if (error) { setProfileError(error.message); return }
+    if (field === 'full_name') setEditingName(false)
+    if (field === 'phone') setEditingPhone(false)
+  }
 
   useEffect(() => {
     if (!user) return
@@ -110,28 +129,87 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 py-2 border-b border-gray-50">
+          {profileError && (
+            <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-xl mb-3">{profileError}</p>
+          )}
+
+          <div className="space-y-1">
+            {/* Full Name */}
+            <div className="flex items-center gap-3 py-2.5 border-b border-gray-50">
               <User className="w-4 h-4 text-gray-400 shrink-0" />
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-400 mb-0.5">Full Name</p>
-                <p className="text-sm font-medium text-gray-800">{profile?.full_name || '—'}</p>
+                {editingName ? (
+                  <input
+                    autoFocus
+                    value={nameVal}
+                    onChange={e => setNameVal(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') saveField('full_name', nameVal); if (e.key === 'Escape') setEditingName(false) }}
+                    className="w-full text-sm font-medium text-gray-800 border-b border-water-400 focus:outline-none bg-transparent pb-0.5"
+                  />
+                ) : (
+                  <p className="text-sm font-medium text-gray-800 truncate">{profile?.full_name || '—'}</p>
+                )}
               </div>
-              <ChevronRight className="w-4 h-4 text-gray-300" />
+              {editingName ? (
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => saveField('full_name', nameVal)} disabled={savingProfile} className="w-7 h-7 rounded-lg bg-water-500 text-white flex items-center justify-center hover:bg-water-600 transition-colors disabled:opacity-50">
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => setEditingName(false)} className="w-7 h-7 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 transition-colors">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => { setNameVal(profile?.full_name || ''); setEditingName(true) }} className="w-7 h-7 rounded-lg bg-gray-50 text-gray-400 flex items-center justify-center hover:bg-gray-100 transition-colors shrink-0">
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
-            <div className="flex items-center gap-3 py-2 border-b border-gray-50">
+
+            {/* Phone */}
+            <div className="flex items-center gap-3 py-2.5 border-b border-gray-50">
               <Phone className="w-4 h-4 text-gray-400 shrink-0" />
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-400 mb-0.5">Phone</p>
-                <p className="text-sm font-medium text-gray-800">{profile?.phone || 'Not set'}</p>
+                {editingPhone ? (
+                  <input
+                    autoFocus
+                    type="tel"
+                    value={phoneVal}
+                    onChange={e => setPhoneVal(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') saveField('phone', phoneVal); if (e.key === 'Escape') setEditingPhone(false) }}
+                    placeholder="09xxxxxxxxx"
+                    className="w-full text-sm font-medium text-gray-800 border-b border-water-400 focus:outline-none bg-transparent pb-0.5 placeholder:text-gray-300"
+                  />
+                ) : (
+                  <p className={`text-sm font-medium truncate ${profile?.phone ? 'text-gray-800' : 'text-amber-500'}`}>
+                    {profile?.phone || 'Not set — required to order'}
+                  </p>
+                )}
               </div>
-              <ChevronRight className="w-4 h-4 text-gray-300" />
+              {editingPhone ? (
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => saveField('phone', phoneVal)} disabled={savingProfile} className="w-7 h-7 rounded-lg bg-water-500 text-white flex items-center justify-center hover:bg-water-600 transition-colors disabled:opacity-50">
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => setEditingPhone(false)} className="w-7 h-7 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 transition-colors">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => { setPhoneVal(profile?.phone || ''); setEditingPhone(true) }} className="w-7 h-7 rounded-lg bg-gray-50 text-gray-400 flex items-center justify-center hover:bg-gray-100 transition-colors shrink-0">
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
-            <div className="flex items-center gap-3 py-2">
+
+            {/* Email — read only */}
+            <div className="flex items-center gap-3 py-2.5">
               <Mail className="w-4 h-4 text-gray-400 shrink-0" />
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-400 mb-0.5">Email</p>
-                <p className="text-sm font-medium text-gray-800">{user?.email || '—'}</p>
+                <p className="text-sm font-medium text-gray-800 truncate">{user?.email || '—'}</p>
               </div>
             </div>
           </div>

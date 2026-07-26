@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Droplets, Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 
 export default function RegisterPage() {
@@ -60,11 +60,9 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-water-500 to-water-700 flex items-center justify-center mx-auto mb-4">
-            <Droplets className="w-7 h-7 text-white" />
-          </div>
+          <img src="/logo.svg" alt="AquaGas" className="w-14 h-14 rounded-2xl mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900">Create account</h1>
-          <p className="text-gray-500 text-sm mt-1">Join AquaGas and order water & gas</p>
+          <p className="text-gray-500 text-sm mt-1">Join <span className="text-water-600 font-semibold">Aqua</span><span className="text-red-600 font-semibold">Gas</span> and order water & gas</p>
         </div>
 
         <form onSubmit={handleRegister} className="space-y-4">
