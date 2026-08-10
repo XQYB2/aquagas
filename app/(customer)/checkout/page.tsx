@@ -108,7 +108,8 @@ export default function CheckoutPage() {
   }
 
   const hasPhone = !!profile?.phone
-  const isValid = hasPhone && address.trim() && name.trim() && phone.trim() && state.items.length > 0 &&
+  const hasPin = !!(deliveryLat && deliveryLng)
+  const isValid = hasPhone && hasPin && address.trim() && name.trim() && phone.trim() && state.items.length > 0 &&
     (deliveryType === 'standard' || (deliveryType === 'batch' && !!selectedSlotId))
 
   const LOCATION_CATEGORIES = [
@@ -412,6 +413,12 @@ export default function CheckoutPage() {
                   setLocationSaved(false)
                 }}
               />
+              {!hasPin && (
+                <div className="flex items-center gap-2 mt-2 px-3 py-2 bg-red-50 border border-red-100 rounded-xl">
+                  <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                  <p className="text-xs text-red-600 font-medium">Pin your delivery location on the map to continue</p>
+                </div>
+              )}
 
               {/* Save location — only when pin is dropped and not already saved */}
               {deliveryLat && deliveryLng && address && !locationSaved && !savedAddresses.some(a => a.lat === deliveryLat && a.lng === deliveryLng) && (
@@ -501,18 +508,20 @@ export default function CheckoutPage() {
               type="button"
               onClick={() => setDeliveryType('standard')}
               className={`w-full flex items-center gap-3 rounded-xl p-4 border transition-colors ${
-                deliveryType === 'standard' ? 'bg-water-50 border-water-300' : 'bg-white border-gray-200'
+                deliveryType === 'standard'
+                  ? 'bg-water-100 dark:bg-water-700/30 border-water-300 dark:border-water-600'
+                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
               }`}
             >
-              <div className="w-10 h-10 bg-water-50 rounded-xl flex items-center justify-center">
-                <Truck className="w-5 h-5 text-water-600" />
+              <div className="w-10 h-10 bg-water-100 dark:bg-water-600/30 rounded-xl flex items-center justify-center">
+                <Truck className="w-5 h-5 text-water-600 dark:text-water-400" />
               </div>
               <div className="text-left flex-1">
-                <p className="font-semibold text-gray-900 text-sm">Standard Delivery</p>
-                <p className="text-xs text-gray-500">Delivered as soon as available · ₱{state.delivery_fee} fee</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Standard Delivery</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Delivered as soon as available · ₱{state.delivery_fee} fee</p>
               </div>
               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                deliveryType === 'standard' ? 'border-water-500 bg-water-500' : 'border-gray-300'
+                deliveryType === 'standard' ? 'border-water-500 bg-water-500' : 'border-gray-300 dark:border-gray-600'
               }`}>
                 {deliveryType === 'standard' && <span className="text-white text-xs">✓</span>}
               </div>
@@ -524,18 +533,20 @@ export default function CheckoutPage() {
                 type="button"
                 onClick={() => { setDeliveryType('batch'); if (!selectedSlotId && batchSlots.length > 0) setSelectedSlotId(batchSlots[0].id) }}
                 className={`w-full flex items-center gap-3 rounded-xl p-4 border transition-colors ${
-                  deliveryType === 'batch' ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200'
+                  deliveryType === 'batch'
+                    ? 'bg-green-100 dark:bg-green-700/20 border-green-300 dark:border-green-600'
+                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                 }`}
               >
-                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-                  <CalendarClock className="w-5 h-5 text-green-600" />
+                <div className="w-10 h-10 bg-green-100 dark:bg-green-600/30 rounded-xl flex items-center justify-center">
+                  <CalendarClock className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="text-left flex-1">
-                  <p className="font-semibold text-gray-900 text-sm">Batch Delivery</p>
-                  <p className="text-xs text-green-700 font-semibold">Free · Scheduled delivery</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Batch Delivery</p>
+                  <p className="text-xs text-green-700 dark:text-green-400 font-semibold">Free · Scheduled delivery</p>
                 </div>
                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                  deliveryType === 'batch' ? 'border-green-500 bg-green-500' : 'border-gray-300'
+                  deliveryType === 'batch' ? 'border-green-500 bg-green-500' : 'border-gray-300 dark:border-gray-600'
                 }`}>
                   {deliveryType === 'batch' && <span className="text-white text-xs">✓</span>}
                 </div>

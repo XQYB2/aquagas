@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
 import { useCart } from '@/lib/cart-context'
-import { Star, Clock, Truck, Droplets, Flame, Plus, Minus, ArrowLeft, MapPin } from 'lucide-react'
+import { Star, Clock, Truck, Droplets, Flame, Plus, Minus, ArrowLeft, MapPin, ShoppingCart } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
@@ -260,6 +260,27 @@ export default function StorePage() {
           )}
         </section>
       </div>
+
+      {/* Sticky checkout bar */}
+      {state.items.length > 0 && state.provider_id === provider.id && (
+        <div className="fixed bottom-20 md:bottom-6 left-0 right-0 px-4 z-40 flex justify-center">
+          <button
+            onClick={() => router.push('/checkout')}
+            className="w-full max-w-sm flex items-center justify-between gap-3 bg-water-500 hover:bg-water-600 text-white rounded-2xl px-5 py-4 shadow-xl shadow-water-300/40 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">
+                {state.items.reduce((s, i) => s + i.quantity, 0)}
+              </span>
+              <span className="font-bold text-sm">View Cart</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold">₱{(state.items.reduce((s, i) => s + i.price * i.quantity, 0) + (state.delivery_fee ?? 0)).toFixed(0)}</span>
+              <ShoppingCart className="w-4 h-4" />
+            </div>
+          </button>
+        </div>
+      )}
 
       {/* Switch store confirmation modal */}
       {confirmSwitch && (

@@ -26,9 +26,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-3">
           <img src="/logo.svg" alt="AquaGas" className="w-16 h-16 rounded-2xl shadow-lg" />
-          <div className="w-5 h-5 border-2 border-water-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-lg font-black tracking-tight">
+            <span className="text-water-600">Aqua</span><span className="text-red-600">Gas</span>
+          </p>
+          <div className="w-5 h-5 border-2 border-water-500 border-t-transparent rounded-full animate-spin mt-1" />
         </div>
       </div>
     )

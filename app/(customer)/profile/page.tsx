@@ -38,13 +38,18 @@ export default function ProfilePage() {
 
   // inline editing
   const [editingName, setEditingName] = useState(false)
-  const [editingPhone, setEditingPhone] = useState(false)
   const [nameVal, setNameVal] = useState('')
-  const [phoneVal, setPhoneVal] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileError, setProfileError] = useState('')
 
-  async function saveField(field: 'full_name' | 'phone', value: string) {
+  // phone verification flow
+  const [phoneStep, setPhoneStep] = useState<'idle' | 'enter' | 'otp'>('idle')
+  const [phoneVal, setPhoneVal] = useState('')
+  const [otpVal, setOtpVal] = useState('')
+  const [phoneLoading, setPhoneLoading] = useState(false)
+  const [phoneError, setPhoneError] = useState('')
+
+  async function saveField(field: 'full_name', value: string) {
     if (!user) return
     setSavingProfile(true)
     setProfileError('')
@@ -52,7 +57,29 @@ export default function ProfilePage() {
     setSavingProfile(false)
     if (error) { setProfileError(error.message); return }
     if (field === 'full_name') setEditingName(false)
-    if (field === 'phone') setEditingPhone(false)
+  }
+
+  async function sendPhoneOtp() {
+    setPhoneError('')
+    const formatted = phoneVal.trim().startsWith('+') ? phoneVal.trim() : '+63' + phoneVal.trim().replace(/^0/, '')
+    setPhoneLoading(true)
+    const { error } = await supabase.auth.updateUser({ phone: formatted })
+    setPhoneLoading(false)
+    if (error) { setPhoneError(error.message); return }
+    setPhoneStep('otp')
+  }
+
+  async function verifyPhoneOtp() {
+    setPhoneError('')
+    const formatted = phoneVal.trim().startsWith('+') ? phoneVal.trim() : '+63' + phoneVal.trim().replace(/^0/, '')
+    setPhoneLoading(true)
+    const { error } = await supabase.auth.verifyOtp({ phone: formatted, token: otpVal.trim(), type: 'phone_change' })
+    if (error) { setPhoneError(error.message); setPhoneLoading(false); return }
+    // Save to profiles table too
+    await supabase.from('profiles').update({ phone: formatted }).eq('id', user!.id)
+    setPhoneLoading(false)
+    setPhoneStep('idle')
+    setOtpVal('')
   }
 
   useEffect(() => {
@@ -168,40 +195,70 @@ export default function ProfilePage() {
             </div>
 
             {/* Phone */}
-            <div className="flex items-center gap-3 py-2.5 border-b border-gray-50">
-              <Phone className="w-4 h-4 text-gray-400 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-gray-400 mb-0.5">Phone</p>
-                {editingPhone ? (
-                  <input
-                    autoFocus
-                    type="tel"
-                    value={phoneVal}
-                    onChange={e => setPhoneVal(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') saveField('phone', phoneVal); if (e.key === 'Escape') setEditingPhone(false) }}
-                    placeholder="09xxxxxxxxx"
-                    className="w-full text-sm font-medium text-gray-800 border-b border-water-400 focus:outline-none bg-transparent pb-0.5 placeholder:text-gray-300"
-                  />
-                ) : (
-                  <p className={`text-sm font-medium truncate ${profile?.phone ? 'text-gray-800' : 'text-amber-500'}`}>
-                    {profile?.phone || 'Not set — required to order'}
-                  </p>
+            <div className="py-2.5 border-b border-gray-50">
+              <div className="flex items-center gap-3">
+                <Phone className="w-4 h-4 text-gray-400 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-400 mb-0.5">Phone</p>
+                  {phoneStep === 'idle' && (
+                    <p className={`text-sm font-medium truncate ${profile?.phone ? 'text-gray-800' : 'text-amber-500'}`}>
+                      {profile?.phone || 'Not set — required to order'}
+                    </p>
+                  )}
+                  {phoneStep === 'enter' && (
+                    <input
+                      autoFocus
+                      type="tel"
+                      value={phoneVal}
+                      onChange={e => setPhoneVal(e.target.value)}
+                      placeholder="09xxxxxxxxx"
+                      className="w-full text-sm font-medium text-gray-800 border-b border-water-400 focus:outline-none bg-transparent pb-0.5 placeholder:text-gray-300"
+                    />
+                  )}
+                  {phoneStep === 'otp' && (
+                    <input
+                      autoFocus
+                      type="number"
+                      value={otpVal}
+                      onChange={e => setOtpVal(e.target.value)}
+                      placeholder="Enter 6-digit OTP"
+                      className="w-full text-sm font-medium text-gray-800 border-b border-water-400 focus:outline-none bg-transparent pb-0.5 placeholder:text-gray-300"
+                    />
+                  )}
+                </div>
+                {phoneStep === 'idle' && (
+                  <button
+                    onClick={() => { setPhoneVal(profile?.phone?.replace('+63', '0') || ''); setPhoneStep('enter'); setPhoneError('') }}
+                    className="w-7 h-7 rounded-lg bg-gray-50 text-gray-400 flex items-center justify-center hover:bg-gray-100 transition-colors shrink-0"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {phoneStep === 'enter' && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={sendPhoneOtp} disabled={phoneLoading || !phoneVal.trim()} className="w-7 h-7 rounded-lg bg-water-500 text-white flex items-center justify-center hover:bg-water-600 transition-colors disabled:opacity-50">
+                      {phoneLoading ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                    </button>
+                    <button onClick={() => { setPhoneStep('idle'); setPhoneError('') }} className="w-7 h-7 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 transition-colors">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+                {phoneStep === 'otp' && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={verifyPhoneOtp} disabled={phoneLoading || otpVal.length < 6} className="w-7 h-7 rounded-lg bg-green-500 text-white flex items-center justify-center hover:bg-green-600 transition-colors disabled:opacity-50">
+                      {phoneLoading ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                    </button>
+                    <button onClick={() => { setPhoneStep('idle'); setPhoneError(''); setOtpVal('') }} className="w-7 h-7 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 transition-colors">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 )}
               </div>
-              {editingPhone ? (
-                <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => saveField('phone', phoneVal)} disabled={savingProfile} className="w-7 h-7 rounded-lg bg-water-500 text-white flex items-center justify-center hover:bg-water-600 transition-colors disabled:opacity-50">
-                    <Check className="w-3.5 h-3.5" />
-                  </button>
-                  <button onClick={() => setEditingPhone(false)} className="w-7 h-7 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 transition-colors">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ) : (
-                <button onClick={() => { setPhoneVal(profile?.phone || ''); setEditingPhone(true) }} className="w-7 h-7 rounded-lg bg-gray-50 text-gray-400 flex items-center justify-center hover:bg-gray-100 transition-colors shrink-0">
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
+              {phoneStep === 'otp' && !phoneError && (
+                <p className="text-xs text-water-600 mt-1.5 ml-7">OTP sent to +63{phoneVal.replace(/^0/, '')} — check your SMS</p>
               )}
+              {phoneError && <p className="text-xs text-red-500 mt-1.5 ml-7">{phoneError}</p>}
             </div>
 
             {/* Email — read only */}
@@ -273,9 +330,15 @@ export default function ProfilePage() {
                   if (!newAddr) setNewAddr(addr)
                 }}
               />
+              {!newLat && !newLng && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-100 rounded-xl">
+                  <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                  <p className="text-xs text-red-600 font-medium">Pin your location on the map — required to save</p>
+                </div>
+              )}
               <button
                 onClick={handleAddAddress}
-                disabled={!newAddr.trim() || saving}
+                disabled={!newAddr.trim() || !newLat || !newLng || saving}
                 className="w-full py-2.5 bg-water-500 hover:bg-water-600 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition-colors"
               >
                 {saving ? 'Saving…' : 'Save Address'}
