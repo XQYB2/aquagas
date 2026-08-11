@@ -13,6 +13,8 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
+  const [agreedTerms, setAgreedTerms] = useState(false)
+  const [agreedPrivacy, setAgreedPrivacy] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -20,6 +22,10 @@ export default function RegisterPage() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    if (!agreedTerms || !agreedPrivacy) {
+      setError('You must agree to the Terms & Conditions and Privacy Policy.')
+      return
+    }
     setLoading(true)
 
     const { data, error } = await supabase.auth.signUp({
@@ -88,9 +94,37 @@ export default function RegisterPage() {
             </div>
           </div>
 
+          {/* Terms & Privacy checkboxes */}
+          <div className="space-y-2.5">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={agreedTerms}
+                onChange={e => setAgreedTerms(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-water-500 focus:ring-water-300 cursor-pointer"
+              />
+              <span className="text-sm text-gray-600">
+                I agree to the{' '}
+                <Link href="/terms" target="_blank" className="text-water-600 font-semibold hover:underline">Terms & Conditions</Link>
+              </span>
+            </label>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={agreedPrivacy}
+                onChange={e => setAgreedPrivacy(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-water-500 focus:ring-water-300 cursor-pointer"
+              />
+              <span className="text-sm text-gray-600">
+                I accept the{' '}
+                <Link href="/privacy" target="_blank" className="text-water-600 font-semibold hover:underline">Privacy Policy</Link>
+              </span>
+            </label>
+          </div>
+
           {error && <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-sm text-red-600">{error}</div>}
 
-          <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl bg-water-500 hover:bg-water-600 text-white font-bold transition-colors disabled:opacity-60 shadow-lg shadow-water-200">
+          <button type="submit" disabled={loading || !agreedTerms || !agreedPrivacy} className="w-full py-3.5 rounded-xl bg-water-500 hover:bg-water-600 text-white font-bold transition-colors disabled:opacity-60 shadow-lg shadow-water-200">
             {loading ? 'Creating account…' : 'Create Account'}
           </button>
         </form>

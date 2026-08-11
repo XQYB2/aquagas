@@ -18,10 +18,11 @@ const CATEGORIES = [
 
 interface Address {
   id: string
-  label: string | null
+  category: string | null
   address: string
   lat: number | null
   lng: number | null
+  is_default: boolean
 }
 
 export default function ProfilePage() {
@@ -31,7 +32,7 @@ export default function ProfilePage() {
   const [addresses, setAddresses] = useState<Address[]>([])
   const [addingAddr, setAddingAddr] = useState(false)
   const [newAddr, setNewAddr]     = useState('')
-  const [newLabel, setNewLabel]   = useState('Home')
+  const [newLabel, setNewLabel]   = useState<string>('Home')
   const [newLat, setNewLat]       = useState<number | null>(null)
   const [newLng, setNewLng]       = useState<number | null>(null)
   const [saving, setSaving]       = useState(false)
@@ -86,10 +87,10 @@ export default function ProfilePage() {
     if (!user) return
     supabase
       .from('customer_addresses')
-      .select('id, label, address, lat, lng')
+      .select('id, category, address, lat, lng, is_default')
       .eq('customer_id', user.id)
-      .order('created_at', { ascending: true })
-      .then(({ data }) => { if (data) setAddresses(data) })
+      .order('is_default', { ascending: false })
+      .then(({ data }) => { if (data) setAddresses(data as Address[]) })
   }, [user])
 
   async function handleAddAddress() {
@@ -97,8 +98,8 @@ export default function ProfilePage() {
     setSaving(true)
     const { data, error } = await supabase
       .from('customer_addresses')
-      .insert({ customer_id: user.id, address: newAddr.trim(), label: newLabel, lat: newLat, lng: newLng })
-      .select('id, label, address, lat, lng')
+      .insert({ customer_id: user.id, address: newAddr.trim(), category: newLabel, lat: newLat, lng: newLng, is_default: addresses.length === 0 })
+      .select('id, category, address, lat, lng, is_default')
       .single()
     setSaving(false)
     if (!error && data) {
@@ -351,7 +352,7 @@ export default function ProfilePage() {
           ) : (
             <div className="space-y-2">
               {addresses.map(addr => {
-                const cat = CATEGORIES.find(c => c.value === addr.label) ?? CATEGORIES[3]
+                const cat = CATEGORIES.find(c => c.value === addr.category) ?? CATEGORIES[3]
                 const Icon = cat.icon
                 return (
                   <div key={addr.id} className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
@@ -360,7 +361,8 @@ export default function ProfilePage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-gray-500 flex items-center gap-1">
-                        {addr.label || 'Saved'}
+                        {addr.category || 'Saved'}
+                        {addr.is_default && <span className="text-water-500 text-[10px] font-bold">Default</span>}
                         {addr.lat && addr.lng && <span className="text-green-500 text-[10px]">📍 pinned</span>}
                       </p>
                       <p className="text-sm text-gray-700 truncate">{addr.address}</p>

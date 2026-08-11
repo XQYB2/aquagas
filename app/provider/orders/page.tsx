@@ -3,9 +3,33 @@
 import { useState, useMemo } from 'react'
 import { useProvider } from '@/lib/provider-context'
 import { OrderStatusBadge } from '@/components/provider/OrderStatusBadge'
-import { ChevronRight, Search } from 'lucide-react'
+import { ChevronRight, Search, Download } from 'lucide-react'
 import Link from 'next/link'
 import type { ProviderOrder } from '@/lib/provider-context'
+
+function exportCSV(orders: ProviderOrder[]) {
+  const rows = [
+    ['Order ID', 'Customer', 'Phone', 'Status', 'Payment', 'Total', 'Delivery Address', 'Date'],
+    ...orders.map(o => [
+      `#${o.id.slice(-6).toUpperCase()}`,
+      o.customer_name,
+      o.customer_phone || '',
+      o.status,
+      o.payment_method || '',
+      o.total_amount.toFixed(2),
+      `"${o.delivery_address.replace(/"/g, '""')}"`,
+      new Date(o.created_at).toLocaleDateString('en-PH'),
+    ]),
+  ]
+  const csv = rows.map(r => r.join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 type Tab = 'all' | 'placed' | 'confirmed' | 'awaiting_pickup' | 'picked_up' | 'being_prepared' | 'out_for_delivery' | 'delivered' | 'cancelled'
 
@@ -49,15 +73,24 @@ export default function ProviderOrdersPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-gray-900">Orders</h1>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search customer…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-water-300 placeholder:text-gray-400 w-48"
-          />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => exportCSV(filtered)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search customer…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-water-300 placeholder:text-gray-400 w-48"
+            />
+          </div>
         </div>
       </div>
 

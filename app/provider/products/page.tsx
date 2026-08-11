@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useProvider } from '@/lib/provider-context'
-import { Plus, Pencil, Trash2, Droplets, Flame, ToggleLeft, ToggleRight, X, ImagePlus } from 'lucide-react'
+import { Plus, Pencil, Trash2, Droplets, Flame, ToggleLeft, ToggleRight, X, ImagePlus, EyeOff, Eye } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { ProviderProduct } from '@/lib/provider-context'
 
@@ -28,7 +28,17 @@ export default function ProductsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [bulkToggling, setBulkToggling] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const allAvailable = products.length > 0 && products.every(p => p.is_available)
+
+  async function handleBulkToggle() {
+    setBulkToggling(true)
+    const newValue = !allAvailable
+    await Promise.all(products.map(p => updateProduct(p.id, { is_available: newValue })))
+    setBulkToggling(false)
+  }
 
   const waterProducts = products.filter(p => p.category === 'water')
   const lpgProducts = products.filter(p => p.category === 'lpg')
@@ -98,13 +108,25 @@ export default function ProductsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-gray-900">Products</h1>
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-2 bg-water-500 hover:bg-water-600 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors shadow-md shadow-water-200"
-        >
-          <Plus className="w-4 h-4" />
-          Add Product
-        </button>
+        <div className="flex items-center gap-2">
+          {products.length > 0 && (
+            <button
+              onClick={handleBulkToggle}
+              disabled={bulkToggling}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-colors ${allAvailable ? 'bg-red-50 border-red-100 text-red-600 hover:bg-red-100' : 'bg-green-50 border-green-100 text-green-600 hover:bg-green-100'} disabled:opacity-50`}
+            >
+              {allAvailable ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              {bulkToggling ? 'Updating…' : allAvailable ? 'Hide All' : 'Show All'}
+            </button>
+          )}
+          <button
+            onClick={openAdd}
+            className="flex items-center gap-2 bg-water-500 hover:bg-water-600 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors shadow-md shadow-water-200"
+          >
+            <Plus className="w-4 h-4" />
+            Add Product
+          </button>
+        </div>
       </div>
 
       {/* Water Section */}

@@ -9,7 +9,12 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'AquaGas — Water & LPG Delivery',
   description: 'On-demand water gallon and LPG gas delivery to your door.',
-  icons: { icon: '/favicon.ico' },
+  icons: { icon: '/logo.svg' },
+  metadataBase: new URL('https://aquagas.shop'),
+  openGraph: {
+    siteName: 'AquaGas',
+    url: 'https://aquagas.shop',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

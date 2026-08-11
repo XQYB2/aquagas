@@ -231,3 +231,34 @@ ALTER TABLE public.orders
     CHECK (delivery_type IN ('standard', 'batch')),
   ADD COLUMN IF NOT EXISTS slot_id      uuid REFERENCES public.delivery_slots(id),
   ADD COLUMN IF NOT EXISTS scheduled_at timestamptz;
+
+
+-- ============================================================
+-- 015 — Add category + is_default to customer_addresses
+-- ============================================================
+
+ALTER TABLE public.customer_addresses
+  ADD COLUMN IF NOT EXISTS category   text,
+  ADD COLUMN IF NOT EXISTS is_default boolean NOT NULL DEFAULT false;
+
+-- Migrate existing label data to category
+UPDATE public.customer_addresses SET category = label WHERE category IS NULL AND label IS NOT NULL;
+
+
+
+-- ============================================================
+-- 016 — Add cancel_reason to orders
+-- ============================================================
+
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS cancel_reason text;
+
+
+-- ============================================================
+-- 017 — Add auto schedule columns to providers
+-- ============================================================
+
+ALTER TABLE public.providers
+  ADD COLUMN IF NOT EXISTS auto_schedule boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS open_time    time,
+  ADD COLUMN IF NOT EXISTS close_time   time;

@@ -30,6 +30,8 @@ export default function ProviderOrderDetailPage() {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [estimatedDelivery, setEstimatedDelivery] = useState('')
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
 
   const order = orders.find(o => o.id === id)
 
@@ -47,14 +49,22 @@ export default function ProviderOrderDetailPage() {
   const nextStatuses = getNextStatuses(order.status).filter(s => s !== 'cancelled' || !isGcashPaid)
 
   async function handleStatusUpdate(newStatus: OrderStatus) {
+    if (newStatus === 'cancelled') { setShowCancelModal(true); return }
     setLoading(newStatus)
     await new Promise(r => setTimeout(r, 600))
     const extra = estimatedDelivery ? { estimated_delivery: estimatedDelivery } : undefined
     updateOrderStatus(id, newStatus, extra)
     setLoading(null)
-    if (newStatus === 'delivered' || newStatus === 'cancelled') {
-      router.push('/provider/orders')
-    }
+    if (newStatus === 'delivered') router.push('/provider/orders')
+  }
+
+  async function handleConfirmCancel() {
+    setLoading('cancelled')
+    setShowCancelModal(false)
+    await new Promise(r => setTimeout(r, 600))
+    updateOrderStatus(id, 'cancelled', cancelReason.trim() ? { cancel_reason: cancelReason.trim() } : undefined)
+    setLoading(null)
+    router.push('/provider/orders')
   }
 
   const subtotal = order.items.reduce((s, i) => s + i.unit_price * i.quantity, 0)
@@ -266,11 +276,45 @@ export default function ProviderOrderDetailPage() {
           </div>
         )}
         {order.status === 'cancelled' && (
-          <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-center">
+          <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-center space-y-1">
             <p className="text-red-600 font-semibold text-sm">❌ This order was cancelled.</p>
+            {(order as any).cancel_reason && (
+              <p className="text-red-500 text-xs">Reason: {(order as any).cancel_reason}</p>
+            )}
           </div>
         )}
       </div>
+
+      {/* Cancel reason modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
+            <h2 className="text-base font-bold text-gray-900">Cancel Order</h2>
+            <p className="text-sm text-gray-500">Provide a reason for cancellation. This will be visible to the customer.</p>
+            <textarea
+              value={cancelReason}
+              onChange={e => setCancelReason(e.target.value)}
+              placeholder="e.g. Out of stock, store closing early…"
+              rows={3}
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 resize-none placeholder:text-gray-300"
+            />
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => { setShowCancelModal(false); setCancelReason('') }}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Keep Order
+              </button>
+              <button
+                onClick={handleConfirmCancel}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-colors"
+              >
+                Cancel Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

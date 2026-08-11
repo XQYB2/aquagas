@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { MessageCircle, X, Send, Loader2, Sparkles, Mic, MicOff, Volume2, VolumeX } from 'lucide-react'
 import { useProvider } from '@/lib/provider-context'
+import { useTheme } from '@/lib/theme-context'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -23,6 +24,8 @@ const SUGGESTIONS = [
 
 export function ProviderBot() {
   const { store, orders, products } = useProvider()
+  const { theme } = useTheme()
+  const dark = theme === 'dark'
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([WELCOME])
   const [input, setInput] = useState('')
@@ -30,7 +33,6 @@ export function ProviderBot() {
   const [listening, setListening] = useState(false)
   const [hasSpeech, setHasSpeech] = useState(false)
   const [speakingIdx, setSpeakingIdx] = useState<number | null>(null)
-  const [dark, setDark] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const recognitionRef = useRef<any>(null)
@@ -40,12 +42,6 @@ export function ProviderBot() {
     setHasSpeech(!!(
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     ))
-    // detect system dark mode
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    setDark(mq.matches)
-    const handler = (e: MediaQueryListEvent) => setDark(e.matches)
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
   }, [])
 
   useEffect(() => {
@@ -175,8 +171,8 @@ export function ProviderBot() {
     <>
       {open && (
         <div
-          className="fixed right-4 z-50 bottom-36 md:bottom-24 w-[calc(100vw-2rem)] max-w-[360px] flex flex-col rounded-2xl shadow-2xl overflow-hidden"
-          style={{ maxHeight: 'calc(100dvh - 10rem)', border: `1px solid ${border}`, background: bg }}
+          className="fixed right-4 z-[9999] bottom-24 md:bottom-24 w-[calc(100vw-2rem)] max-w-[360px] flex flex-col rounded-2xl shadow-2xl overflow-hidden"
+          style={{ maxHeight: 'calc(100dvh - 6rem)', border: `1px solid ${border}`, background: bg }}
         >
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 shrink-0" style={{ background: 'linear-gradient(135deg, #1d4ed8, #0284c7)' }}>
@@ -187,15 +183,6 @@ export function ProviderBot() {
               <p className="text-white font-semibold text-sm leading-tight">Store Assistant</p>
               <p className="text-blue-100 text-xs leading-tight">{store?.store_name || 'Your store'}</p>
             </div>
-            {/* Dark mode toggle */}
-            <button
-              onClick={() => setDark(d => !d)}
-              className="w-7 h-7 rounded-full flex items-center justify-center transition-colors"
-              style={{ background: 'rgba(255,255,255,0.15)' }}
-              title={dark ? 'Light mode' : 'Dark mode'}
-            >
-              <span className="text-white text-xs">{dark ? '☀️' : '🌙'}</span>
-            </button>
             <button
               onClick={() => setOpen(false)}
               className="w-7 h-7 rounded-full flex items-center justify-center transition-colors"
@@ -314,7 +301,7 @@ export function ProviderBot() {
       {/* FAB */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="fixed right-4 z-50 bottom-20 md:bottom-6 w-14 h-14 rounded-full text-white shadow-lg hover:scale-105 active:scale-95 transition-transform flex items-center justify-center"
+        className="fixed right-4 z-[9999] bottom-4 w-14 h-14 rounded-full text-white shadow-lg hover:scale-105 active:scale-95 transition-transform flex items-center justify-center"
         style={{ background: 'linear-gradient(135deg, #1d4ed8, #0284c7)', boxShadow: '0 4px 20px rgba(2,132,199,0.5)' }}
         aria-label="Open Store Assistant"
       >

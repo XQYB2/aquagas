@@ -23,6 +23,7 @@ type Order = {
   payment_status: 'unpaid' | 'pending' | 'paid' | null
   delivery_type: 'standard' | 'batch'
   scheduled_at: string | null
+  cancel_reason: string | null
   items: { id: string; product_name: string; quantity: number; unit_price: number }[]
 }
 
@@ -52,7 +53,7 @@ export default function OrderDetailPage() {
       setLoading(true)
       const { data: o } = await supabase
         .from('orders')
-        .select('id, status, total_amount, delivery_address, estimated_delivery, payment_method, payment_status, delivery_type, scheduled_at, created_at, provider_id, providers(store_name, delivery_fee, service_type)')
+        .select('id, status, total_amount, delivery_address, estimated_delivery, payment_method, payment_status, delivery_type, scheduled_at, cancel_reason, created_at, provider_id, providers(store_name, delivery_fee, service_type)')
         .eq('id', id)
         .single()
 
@@ -83,6 +84,7 @@ export default function OrderDetailPage() {
         payment_status: op.payment_status || null,
         delivery_type: op.delivery_type || 'standard',
         scheduled_at: op.scheduled_at || null,
+        cancel_reason: op.cancel_reason || null,
         items: (items || []).map((i: any) => ({
           id: i.id, product_name: i.products?.name || 'Item', quantity: i.quantity, unit_price: i.unit_price,
         })),
@@ -211,6 +213,16 @@ export default function OrderDetailPage() {
       </div>
 
       <div className="space-y-4">
+        {/* Cancelled banner */}
+        {order.status === 'cancelled' && (
+          <div className="bg-red-50 border border-red-100 rounded-2xl p-4 space-y-1">
+            <p className="text-red-600 font-semibold text-sm">❌ This order was cancelled.</p>
+            {order.cancel_reason && (
+              <p className="text-red-500 text-xs">Reason: {order.cancel_reason}</p>
+            )}
+          </div>
+        )}
+
         {/* Awaiting GCash Payment banner */}
         {order.status === 'pending_payment' && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5">

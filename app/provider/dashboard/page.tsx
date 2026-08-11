@@ -7,32 +7,30 @@ import {
   ChevronRight, ToggleLeft, ToggleRight, Banknote,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 
 const OrdersMap = dynamic(() => import('@/components/maps/OrdersMap').then(m => m.OrdersMap), { ssr: false })
 
-function getRevenueLast7Days(orders: ProviderOrder[]): { day: string; revenue: number; orders: number }[] {
-  const days = []
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
-    const label = date.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric' })
+function getRevenueDays(orders: ProviderOrder[], days: number): { day: string; revenue: number; orders: number }[] {
+  return Array.from({ length: days }, (_, i) => {
+    const date = new Date(Date.now() - (days - 1 - i) * 24 * 60 * 60 * 1000)
     const dayOrders = orders.filter(o => {
       const d = new Date(o.created_at)
       return d.toDateString() === date.toDateString() && o.status !== 'cancelled'
     })
-    days.push({
-      day: label,
-      revenue: dayOrders.reduce((s, o) => s + o.total_amount, 0),
-      orders: dayOrders.length,
-    })
-  }
-  return days
+    const label = days <= 7
+      ? date.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric' })
+      : date.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })
+    return { day: label, revenue: dayOrders.reduce((s, o) => s + o.total_amount, 0), orders: dayOrders.length }
+  })
 }
 
 export default function DashboardPage() {
   const { store, orders, updateStore } = useProvider()
-  const revenue7d = useMemo(() => getRevenueLast7Days(orders), [orders])
+  const [chartDays, setChartDays] = useState<7 | 30>(7)
+  const revenueData = useMemo(() => getRevenueDays(orders, chartDays), [orders, chartDays])
+  const revenue7d = useMemo(() => getRevenueDays(orders, 7), [orders])
 
   const todayOrders = orders.filter(o => {
     const d = new Date(o.created_at)
@@ -45,7 +43,7 @@ export default function DashboardPage() {
     pending: orders.filter(o => o.status === 'placed').length,
     inProgress: orders.filter(o => ['confirmed', 'preparing', 'out_for_delivery'].includes(o.status)).length,
     totalDelivered: orders.filter(o => o.status === 'delivered').length,
-    weekRevenue: revenue7d.reduce((s, d) => s + d.revenue, 0),
+    weekRevenue: revenueData.reduce((s, d) => s + d.revenue, 0),
   }
 
   const activeOrders = orders.filter(o => ['placed', 'confirmed', 'awaiting_pickup', 'picked_up', 'being_prepared', 'out_for_delivery'].includes(o.status))
@@ -61,7 +59,7 @@ export default function DashboardPage() {
       lng: (o as any).delivery_lng as number,
     }))
 
-  const maxRevenue = Math.max(...revenue7d.map(d => d.revenue), 1)
+  const maxRevenue = Math.max(...revenueData.map(d => d.revenue), 1)
 
   return (
     <div>
@@ -128,43 +126,86 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         {/* Revenue chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-5">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-5 overflow-visible">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="font-semibold text-gray-900 text-sm">Revenue — Last 7 Days</h2>
+              <h2 className="font-semibold text-gray-900 text-sm">Revenue — Last {chartDays} Days</h2>
               <p className="text-2xl font-bold text-gray-900 mt-0.5">₱{stats.weekRevenue.toLocaleString()}</p>
             </div>
-            <div className="flex items-center gap-1 text-xs text-green-600 font-semibold bg-green-50 px-2.5 py-1 rounded-full">
-              <TrendingUp className="w-3.5 h-3.5" />
-              This week
+            <div className="flex items-center gap-1.5">
+              {([7, 30] as const).map(d => (
+                <button
+                  key={d}
+                  onClick={() => setChartDays(d)}
+                  className={`text-xs font-semibold px-2.5 py-1 rounded-full transition-colors ${chartDays === d ? 'bg-water-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                >
+                  {d}d
+                </button>
+              ))}
+              <div className="flex items-center gap-1 text-xs text-green-600 font-semibold bg-green-50 px-2.5 py-1 rounded-full ml-1">
+                <TrendingUp className="w-3.5 h-3.5" />
+                Revenue
+              </div>
             </div>
           </div>
 
-          <div className="flex items-end gap-2 h-32">
-            {revenue7d.map((d, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full relative flex items-end justify-center" style={{ height: 96 }}>
+          {/* Chart */}
+          <div className={chartDays === 30 ? 'overflow-x-auto' : ''}>
+            <div
+              className="flex items-end overflow-visible"
+              style={{
+                height: 96,
+                gap: 3,
+                minWidth: chartDays === 30 ? `${30 * 16}px` : undefined,
+              }}
+            >
+              {revenueData.map((d, i) => {
+                const barPx = d.revenue > 0 ? Math.max(Math.round((d.revenue / maxRevenue) * 72), 6) : 3
+                return (
                   <div
-                    className="w-full bg-water-100 hover:bg-water-200 rounded-t-lg transition-all cursor-default relative group"
-                    style={{ height: `${Math.max((d.revenue / maxRevenue) * 96, d.revenue > 0 ? 8 : 2)}px` }}
-                    title={`₱${d.revenue}`}
+                    key={i}
+                    className="group relative shrink-0"
+                    style={{ flex: 1, minWidth: chartDays === 30 ? 13 : undefined }}
+                    title={d.revenue > 0 ? `₱${d.revenue.toLocaleString()}` : undefined}
                   >
                     {d.revenue > 0 && (
-                      <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                        ₱{d.revenue}
+                      <div
+                        className="absolute left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50"
+                        style={{ bottom: `calc(${barPx}px + 4px)` }}
+                      >
+                        ₱{d.revenue.toLocaleString()}
                       </div>
                     )}
                     <div
-                      className="absolute bottom-0 left-0 right-0 bg-water-500 rounded-t-lg"
-                      style={{ height: `${Math.max((d.revenue / maxRevenue) * 96, d.revenue > 0 ? 8 : 0)}px` }}
+                      className={`w-full rounded-t-sm transition-colors ${d.revenue > 0 ? 'bg-water-500 hover:bg-water-600' : 'bg-gray-100'}`}
+                      style={{ height: barPx }}
                     />
                   </div>
+                )
+              })}
+            </div>
+            {/* X labels */}
+            <div
+              className="flex mt-1.5"
+              style={{
+                gap: 3,
+                minWidth: chartDays === 30 ? `${30 * 16}px` : undefined,
+              }}
+            >
+              {revenueData.map((d, i) => (
+                <div
+                  key={i}
+                  className="flex-1 shrink-0 flex justify-center"
+                  style={{ minWidth: chartDays === 30 ? 13 : undefined }}
+                >
+                  {chartDays === 7 ? (
+                    <span className="text-[10px] text-gray-400 whitespace-nowrap">{d.day.split(',')[0]}</span>
+                  ) : i % 5 === 0 ? (
+                    <span className="text-[9px] text-gray-400 whitespace-nowrap">{d.day}</span>
+                  ) : null}
                 </div>
-                <span className="text-[10px] text-gray-400 text-center leading-tight">
-                  {d.day.split(',')[0]}
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 

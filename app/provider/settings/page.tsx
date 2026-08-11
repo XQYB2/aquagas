@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useProvider } from '@/lib/provider-context'
 import { supabase } from '@/lib/supabase'
-import { Store, Clock, Truck, Phone, MapPin, Star, Save, ToggleLeft, ToggleRight, Droplets, Flame, ImagePlus } from 'lucide-react'
+import { Store, Clock, Truck, Phone, MapPin, Star, Save, ToggleLeft, ToggleRight, Droplets, Flame, ImagePlus, CalendarClock } from 'lucide-react'
 import dynamic from 'next/dynamic'
 const AddressPicker = dynamic(() => import('@/components/maps/AddressPicker').then(m => m.AddressPicker), { ssr: false })
 
@@ -44,12 +44,15 @@ export default function ProviderSettingsPage() {
     delivery_fee: '',
     delivery_time_min: '',
     is_open: true,
+    auto_schedule: false,
+    open_time: '08:00',
+    close_time: '17:00',
   })
   const [storeLat, setStoreLat] = useState<number | null>(null)
   const [storeLng, setStoreLng] = useState<number | null>(null)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
-
+  const scheduleRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     if (store) {
@@ -62,11 +65,39 @@ export default function ProviderSettingsPage() {
         delivery_fee: store.delivery_fee.toString(),
         delivery_time_min: store.delivery_time_min.toString(),
         is_open: store.is_open,
+        auto_schedule: store.auto_schedule ?? false,
+        open_time: store.open_time ?? '08:00',
+        close_time: store.close_time ?? '17:00',
       })
       setStoreLat(store.lat)
       setStoreLng(store.lng)
     }
   }, [store])
+
+  // Auto open/close scheduler
+  useEffect(() => {
+    if (scheduleRef.current) clearInterval(scheduleRef.current)
+    if (!store?.auto_schedule || !store.open_time || !store.close_time) return
+
+    function checkSchedule() {
+      if (!store?.auto_schedule || !store.open_time || !store.close_time) return
+      const now = new Date()
+      const [openH, openM] = store.open_time.split(':').map(Number)
+      const [closeH, closeM] = store.close_time.split(':').map(Number)
+      const nowMins = now.getHours() * 60 + now.getMinutes()
+      const openMins = openH * 60 + openM
+      const closeMins = closeH * 60 + closeM
+      const shouldBeOpen = nowMins >= openMins && nowMins < closeMins
+      if (shouldBeOpen !== store.is_open) {
+        updateStore({ is_open: shouldBeOpen })
+        setForm(f => ({ ...f, is_open: shouldBeOpen }))
+      }
+    }
+
+    checkSchedule()
+    scheduleRef.current = setInterval(checkSchedule, 60_000)
+    return () => { if (scheduleRef.current) clearInterval(scheduleRef.current) }
+  }, [store?.auto_schedule, store?.open_time, store?.close_time, store?.is_open])
 
   async function handleSave() {
     setSaving(true)
@@ -82,6 +113,9 @@ export default function ProviderSettingsPage() {
       delivery_fee: parseFloat(form.delivery_fee) || 0,
       delivery_time_min: parseInt(form.delivery_time_min) || 30,
       is_open: form.is_open,
+      auto_schedule: form.auto_schedule,
+      open_time: form.auto_schedule ? form.open_time : null,
+      close_time: form.auto_schedule ? form.close_time : null,
     })
     setSaving(false)
     setSaved(true)
@@ -97,6 +131,9 @@ export default function ProviderSettingsPage() {
     form.delivery_fee !== store.delivery_fee.toString() ||
     form.delivery_time_min !== store.delivery_time_min.toString() ||
     form.is_open !== store.is_open ||
+    form.auto_schedule !== (store.auto_schedule ?? false) ||
+    form.open_time !== (store.open_time ?? '08:00') ||
+    form.close_time !== (store.close_time ?? '17:00') ||
     storeLat !== store.lat ||
     storeLng !== store.lng
   )
@@ -134,6 +171,55 @@ export default function ProviderSettingsPage() {
               }
             </button>
           </div>
+        </div>
+
+        {/* Auto Schedule */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="flex items-center justify-between mb-1">
+            <div>
+              <h2 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+                <CalendarClock className="w-4 h-4 text-water-500" />
+                Auto Open / Close Schedule
+              </h2>
+              <p className="text-xs text-gray-400 mt-0.5">Store opens and closes automatically at set times</p>
+            </div>
+            <button
+              onClick={() => setForm(f => ({ ...f, auto_schedule: !f.auto_schedule }))}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl font-semibold text-sm transition-all ${
+                form.auto_schedule
+                  ? 'bg-water-50 text-water-700 hover:bg-water-100'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}
+            >
+              {form.auto_schedule ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+              {form.auto_schedule ? 'On' : 'Off'}
+            </button>
+          </div>
+          {form.auto_schedule && (
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Open Time</label>
+                <input
+                  type="time"
+                  value={form.open_time}
+                  onChange={e => setForm(f => ({ ...f, open_time: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-water-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Close Time</label>
+                <input
+                  type="time"
+                  value={form.close_time}
+                  onChange={e => setForm(f => ({ ...f, close_time: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-water-300"
+                />
+              </div>
+              <p className="col-span-2 text-xs text-gray-400">
+                When enabled, your store status will be set automatically based on these times. Manual toggle is still available.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Store Logo */}

@@ -63,6 +63,9 @@ export type ProviderStore = {
   konfirma_sk: string | null
   konfirma_wallet_id: string | null
   konfirma_webhook_secret: string | null
+  auto_schedule: boolean
+  open_time: string | null
+  close_time: string | null
 }
 
 interface ProviderState {
@@ -80,7 +83,7 @@ const ProviderContext = createContext<ProviderState & {
   updateProduct: (id: string, updates: Partial<ProviderProduct>) => void
   addProduct: (product: Omit<ProviderProduct, 'id' | 'provider_id'>) => void
   deleteProduct: (id: string) => void
-  updateOrderStatus: (id: string, status: OrderStatus, extra?: { estimated_delivery?: string }) => void
+  updateOrderStatus: (id: string, status: OrderStatus, extra?: { estimated_delivery?: string; cancel_reason?: string }) => void
 }>({
   store: null, products: [], orders: [], isLoggedIn: false, loading: true,
   login: async () => false,
@@ -156,6 +159,9 @@ export function ProviderAuthProvider({ children }: { children: React.ReactNode }
       konfirma_sk: providerRow.konfirma_sk ?? null,
       konfirma_wallet_id: providerRow.konfirma_wallet_id ?? null,
       konfirma_webhook_secret: providerRow.konfirma_webhook_secret ?? null,
+      auto_schedule: providerRow.auto_schedule ?? false,
+      open_time: providerRow.open_time ?? null,
+      close_time: providerRow.close_time ?? null,
     }
 
     const { data: productRows } = await supabase.from('products').select('*').eq('provider_id', providerRow.id)
@@ -284,7 +290,7 @@ export function ProviderAuthProvider({ children }: { children: React.ReactNode }
     await supabase.from('products').delete().eq('id', id)
   }
 
-  async function updateOrderStatus(id: string, status: OrderStatus, extra?: { estimated_delivery?: string }) {
+  async function updateOrderStatus(id: string, status: OrderStatus, extra?: { estimated_delivery?: string; cancel_reason?: string }) {
     const updated_at = new Date().toISOString()
     setState(s => ({
       ...s,

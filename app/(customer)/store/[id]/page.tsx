@@ -1,6 +1,6 @@
 'use client'
 
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
 import { useCart } from '@/lib/cart-context'
@@ -25,12 +25,14 @@ type Review = {
 export default function StorePage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { state, dispatch } = useCart()
 
   const [provider, setProvider] = useState<Provider | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
+  const [reorderApplied, setReorderApplied] = useState(false)
 
   const [confirmSwitch, setConfirmSwitch] = useState<null | (() => void)>(null)
 
@@ -62,6 +64,27 @@ export default function StorePage() {
     })
     return () => { cancelled = true }
   }, [id])
+
+  // Pre-fill cart from reorder query param
+  useEffect(() => {
+    if (reorderApplied || loading || products.length === 0) return
+    const raw = searchParams.get('reorder')
+    if (!raw) return
+    try {
+      const items: { product_id: string; quantity: number }[] = JSON.parse(decodeURIComponent(raw))
+      const cartItems = items
+        .map(({ product_id, quantity }) => {
+          const product = products.find(p => p.id === product_id)
+          if (!product || !product.is_available) return null
+          return { id: product.id, product_id: product.id, name: product.name, price: product.price, quantity, unit: product.unit, category: product.category as 'water' | 'lpg' }
+        })
+        .filter(Boolean) as any[]
+      if (cartItems.length > 0) {
+        dispatch({ type: 'LOAD_CART', payload: { items: cartItems, provider_id: id as string, provider_name: provider?.store_name || '', delivery_fee: provider?.delivery_fee ?? 0 } })
+      }
+      setReorderApplied(true)
+    } catch {}
+  }, [loading, products, reorderApplied])
 
   if (loading) {
     return (

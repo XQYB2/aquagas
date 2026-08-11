@@ -30,7 +30,7 @@ export default function CheckoutPage() {
   const [deliveryType, setDeliveryType] = useState<'standard' | 'batch'>('standard')
   const [batchSlots, setBatchSlots] = useState<{ id: string; day_of_week: number; time_hhmm: string; max_orders: number; cutoff_minutes: number }[]>([])
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
-  const [savedAddresses, setSavedAddresses] = useState<{ id: string; label: string | null; address: string; lat: number | null; lng: number | null }[]>([])
+  const [savedAddresses, setSavedAddresses] = useState<{ id: string; category: string | null; address: string; lat: number | null; lng: number | null; is_default: boolean }[]>([])
   const [savingLocation, setSavingLocation] = useState(false)
   const [locationSaved, setLocationSaved] = useState(false)
   const [showLabelPicker, setShowLabelPicker] = useState(false)
@@ -46,16 +46,16 @@ export default function CheckoutPage() {
     if (!user) return
     supabase
       .from('customer_addresses')
-      .select('id, label, address, lat, lng')
+      .select('id, category, address, lat, lng, is_default')
       .eq('customer_id', user.id)
-      .order('created_at', { ascending: true })
+      .order('is_default', { ascending: false })
       .then(({ data }) => {
         if (data && data.length > 0) {
-          setSavedAddresses(data)
-          // Auto-fill first saved address
-          const first = data[0]
-          setAddress(first.address)
-          if (first.lat && first.lng) { setDeliveryLat(first.lat); setDeliveryLng(first.lng) }
+          setSavedAddresses(data as any)
+          // Auto-fill default address (or first)
+          const def = data.find((a: any) => a.is_default) || data[0]
+          setAddress(def.address)
+          if (def.lat && def.lng) { setDeliveryLat(def.lat); setDeliveryLng(def.lng) }
         }
       })
   }, [user])
@@ -125,12 +125,12 @@ export default function CheckoutPage() {
     setShowLabelPicker(false)
     const { data, error } = await supabase
       .from('customer_addresses')
-      .insert({ customer_id: user.id, address: address.trim(), lat: deliveryLat, lng: deliveryLng, label })
-      .select('id, label, address, lat, lng')
+      .insert({ customer_id: user.id, address: address.trim(), lat: deliveryLat, lng: deliveryLng, category: label, is_default: savedAddresses.length === 0 })
+      .select('id, category, address, lat, lng, is_default')
       .single()
     setSavingLocation(false)
     if (!error && data) {
-      setSavedAddresses(prev => [...prev, data])
+      setSavedAddresses(prev => [...prev, data as any])
       setLocationSaved(true)
       setTimeout(() => setLocationSaved(false), 3000)
     }
@@ -369,7 +369,7 @@ export default function CheckoutPage() {
                       { value: 'Work',            icon: Briefcase      },
                       { value: 'Other',           icon: MoreHorizontal },
                     ]
-                    const Icon = CATS.find(c => c.value === a.label)?.icon ?? Bookmark
+                    const Icon = CATS.find(c => c.value === a.category)?.icon ?? Bookmark
                     const active = address === a.address
                     return (
                       <button
@@ -388,7 +388,7 @@ export default function CheckoutPage() {
                         }`}
                       >
                         <Icon className="w-3 h-3" />
-                        {a.label || a.address.split(',')[0]}
+                        {a.category || a.address.split(',')[0]}
                       </button>
                     )
                   })}

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import { StatusBadge } from '@/components/customer/StatusBadge'
-import { ArrowRight, Package, X, Truck, ChefHat, CheckCircle2, CalendarClock } from 'lucide-react'
+import { ArrowRight, Package, X, Truck, ChefHat, CheckCircle2, CalendarClock, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
 
 type Order = {
@@ -12,11 +12,12 @@ type Order = {
   status: string
   total_amount: number
   created_at: string
+  provider_id: string
   provider_name: string
   payment_method: string | null
   delivery_type: 'standard' | 'batch'
   scheduled_at: string | null
-  items: { id: string; product_name: string; quantity: number }[]
+  items: { id: string; product_name: string; quantity: number; product_id: string }[]
 }
 
 // Statuses that mean the order is actively being processed
@@ -40,12 +41,19 @@ export default function OrdersPage() {
     if (authLoading) return
     if (!user) { setOrders([]); setLoading(false); return }
     load()
+
+    // Reload when user switches back to this tab
+    function onVisibilityChange() {
+      if (document.visibilityState === 'visible') load()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
   }, [user, authLoading])
 
   async function load() {
     const { data: ordersData } = await supabase
       .from('orders')
-      .select('id, status, total_amount, created_at, payment_method, delivery_type, scheduled_at, providers(store_name)')
+      .select('id, status, total_amount, created_at, payment_method, delivery_type, scheduled_at, provider_id, providers(store_name)')
       .eq('customer_id', user!.id)
       .order('created_at', { ascending: false })
 
@@ -53,7 +61,7 @@ export default function OrdersPage() {
 
     const orderIds = ordersData.map((o: any) => o.id)
     const { data: itemsData } = orderIds.length
-      ? await supabase.from('order_items').select('id, order_id, quantity, products(name)').in('order_id', orderIds)
+      ? await supabase.from('order_items').select('id, order_id, product_id, quantity, products(name)').in('order_id', orderIds)
       : { data: [] as any[] }
 
     setOrders(ordersData.map((o: any) => ({
@@ -61,13 +69,14 @@ export default function OrdersPage() {
       status: o.status,
       total_amount: o.total_amount,
       created_at: o.created_at,
+      provider_id: o.provider_id,
       payment_method: o.payment_method,
       provider_name: o.providers?.store_name || 'Store',
       delivery_type: o.delivery_type || 'standard',
       scheduled_at: o.scheduled_at || null,
       items: (itemsData || [])
         .filter((i: any) => i.order_id === o.id)
-        .map((i: any) => ({ id: i.id, product_name: i.products?.name || 'Item', quantity: i.quantity })),
+        .map((i: any) => ({ id: i.id, product_name: i.products?.name || 'Item', quantity: i.quantity, product_id: i.product_id })),
     })))
     setLoading(false)
   }
@@ -182,7 +191,17 @@ export default function OrdersPage() {
                 <span className="text-gray-400 text-xs">
                   {order.items.reduce((s, i) => s + i.quantity, 0)} item{order.items.reduce((s, i) => s + i.quantity, 0) !== 1 ? 's' : ''}
                 </span>
-                <span className="font-bold text-gray-900">₱{order.total_amount.toFixed(0)}</span>
+                <div className="flex items-center gap-3">
+                  <Link
+                    href={`/store/${order.provider_id}?reorder=${encodeURIComponent(JSON.stringify(order.items.map(i => ({ product_id: i.product_id, quantity: i.quantity }))))}`}
+                    onClick={e => e.stopPropagation()}
+                    className="flex items-center gap-1 text-xs font-semibold text-water-600 hover:text-water-700"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Reorder
+                  </Link>
+                  <span className="font-bold text-gray-900">₱{order.total_amount.toFixed(0)}</span>
+                </div>
               </div>
 
               {/* Delivery type pill */}

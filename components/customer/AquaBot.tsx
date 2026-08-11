@@ -91,7 +91,7 @@ export function AquaBot() {
       {/* Chat panel */}
       {open && (
         <div
-          className="fixed right-4 z-50 bottom-36 md:bottom-24 w-[calc(100vw-2rem)] max-w-[360px] flex flex-col rounded-2xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
+          className="fixed right-4 z-[9999] bottom-24 md:bottom-24 w-[calc(100vw-2rem)] max-w-[360px] flex flex-col rounded-2xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
           style={{ maxHeight: 'calc(100dvh - 10rem)' }}
         >
           {/* Header */}
@@ -167,7 +167,7 @@ export function AquaBot() {
       {/* FAB */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="fixed right-4 z-50 bottom-20 md:bottom-6 w-14 h-14 rounded-full bg-gradient-to-br from-water-500 to-water-700 text-white shadow-lg hover:scale-105 active:scale-95 transition-transform flex items-center justify-center"
+        className="fixed right-4 z-[9999] bottom-4 w-14 h-14 rounded-full bg-gradient-to-br from-water-500 to-water-700 text-white shadow-lg hover:scale-105 active:scale-95 transition-transform flex items-center justify-center"
         aria-label="Open AquaBot"
       >
         {open ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
