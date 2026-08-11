@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     siteName: 'AquaGas',
     url: 'https://aquagas.shop',
   },
+  verification: { google: '36Dlx44_Ig_hDYkQ6CtJpKj3KS7pb87q_MUyAbH-nKk' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
