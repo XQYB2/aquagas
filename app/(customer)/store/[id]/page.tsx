@@ -99,7 +99,7 @@ export default function StorePage() {
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
         <p className="text-5xl mb-4">🏪</p>
         <h2 className="text-xl font-bold mb-2">Store not found</h2>
-        <Link href="/" className="text-water-500 hover:underline">Go back home</Link>
+        <Link href="/home" className="text-water-500 hover:underline">Go back home</Link>
       </div>
     )
   }
@@ -159,7 +159,7 @@ export default function StorePage() {
         {provider.logo_url && (
           <img src={provider.logo_url} alt={provider.store_name} className="absolute inset-0 w-full h-full object-cover" />
         )}
-        <Link href="/" className="absolute top-4 left-4 w-9 h-9 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-colors z-10">
+        <Link href="/home" className="absolute top-4 left-4 w-9 h-9 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-colors z-10">
           <ArrowLeft className="w-4 h-4 text-white" />
         </Link>
         {!provider.logo_url && (

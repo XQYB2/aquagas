@@ -23,7 +23,7 @@ export default function AuthSessionPage() {
         if (profile?.role === 'provider') {
           router.replace('/provider')
         } else {
-          router.replace('/')
+          router.replace('/home')
         }
       } else {
         // Listen for auth state change — Supabase fires this when it processes the hash
@@ -35,7 +35,7 @@ export default function AuthSessionPage() {
                 if (profile?.role === 'provider') {
                   router.replace('/provider')
                 } else {
-                  router.replace('/')
+                  router.replace('/home')
                 }
               })
           } else if (event === 'SIGNED_OUT') {

@@ -31,14 +31,14 @@ export function Navbar() {
     <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shadow-sm transition-colors duration-200">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl">
+        <Link href="/home" className="flex items-center gap-2 font-bold text-xl">
           <img src="/logo.svg" alt="AquaGas" className="w-9 h-9 rounded-xl" />
           <span><span className="text-water-600 dark:text-water-400">Aqua</span><span className="text-red-600">Gas</span></span>
         </Link>
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-          <Link href="/" className="text-gray-600 dark:text-gray-400 hover:text-water-600 dark:hover:text-water-400 transition-colors">Browse</Link>
+          <Link href="/home" className="text-gray-600 dark:text-gray-400 hover:text-water-600 dark:hover:text-water-400 transition-colors">Browse</Link>
           <Link href="/orders" className="text-gray-600 dark:text-gray-400 hover:text-water-600 dark:hover:text-water-400 transition-colors">My Orders</Link>
           {!user && (
             <Link href="/login" className="text-gray-600 dark:text-gray-400 hover:text-water-600 dark:hover:text-water-400 transition-colors">Sign In</Link>
@@ -76,7 +76,7 @@ export function Navbar() {
       {/* Mobile Menu */}
       {menuOpen && (
         <div className="md:hidden border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-4 flex flex-col gap-4 text-sm font-medium">
-          <Link href="/" onClick={() => setMenuOpen(false)} className="text-gray-700 dark:text-gray-300 py-2">Browse Stores</Link>
+          <Link href="/home" onClick={() => setMenuOpen(false)} className="text-gray-700 dark:text-gray-300 py-2">Browse Stores</Link>
           <Link href="/orders" onClick={() => setMenuOpen(false)} className="text-gray-700 dark:text-gray-300 py-2">My Orders</Link>
           {user ? (
             <Link href="/profile" onClick={() => setMenuOpen(false)} className="text-gray-700 dark:text-gray-300 py-2">Profile</Link>

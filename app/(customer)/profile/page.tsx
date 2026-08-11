@@ -123,7 +123,7 @@ export default function ProfilePage() {
 
   async function handleSignOut() {
     await signOut()
-    router.push('/')
+    router.push('/home')
   }
 
   if (!user) {

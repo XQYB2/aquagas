@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: 'AquaGas connects you with local water refilling stations and LPG suppliers for fast, reliable home delivery.',
 }
 
-export default function AboutPage() {
+export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Nav */}

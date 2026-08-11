@@ -111,7 +111,7 @@ export default function OrdersPage() {
         </div>
         <h2 className="text-xl font-bold text-gray-900 mb-2">No orders yet</h2>
         <p className="text-gray-500 text-sm mb-6">Your orders will appear here once you place one.</p>
-        <Link href="/" className="inline-block bg-water-500 text-white font-semibold px-6 py-3 rounded-xl hover:bg-water-600 transition-colors">
+        <Link href="/home" className="inline-block bg-water-500 text-white font-semibold px-6 py-3 rounded-xl hover:bg-water-600 transition-colors">
           Browse Stores
         </Link>
       </div>

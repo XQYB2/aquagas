@@ -239,7 +239,7 @@ export default function CheckoutPage() {
       <div className="max-w-md mx-auto px-4 py-20 text-center">
         <p className="text-5xl mb-4">🛒</p>
         <h2 className="text-xl font-bold mb-2 text-gray-900">Your cart is empty</h2>
-        <Link href="/" className="inline-block mt-4 bg-water-500 text-white font-semibold px-6 py-3 rounded-xl hover:bg-water-600 transition-colors">
+        <Link href="/home" className="inline-block mt-4 bg-water-500 text-white font-semibold px-6 py-3 rounded-xl hover:bg-water-600 transition-colors">
           Browse Stores
         </Link>
       </div>
@@ -249,7 +249,7 @@ export default function CheckoutPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 pb-32">
       <div className="flex items-center gap-3 mb-8">
-        <Link href="/" className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
+        <Link href="/home" className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
           <ArrowLeft className="w-4 h-4 text-gray-600" />
         </Link>
         <h1 className="text-xl font-bold text-gray-900">Checkout</h1>
