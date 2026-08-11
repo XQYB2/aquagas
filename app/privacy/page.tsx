@@ -67,7 +67,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="font-semibold text-gray-900 text-base mb-2">10. Contact</h2>
-            <p>For privacy concerns or data requests, contact us at <a href="mailto:support@aquagas.shop" className="text-water-600 font-medium">support@aquagas.shop</a>.</p>
+            <p>For privacy concerns or data requests, contact us at <a href="mailto:aquagas.business@gmail.com" className="text-water-600 font-medium">aquagas.business@gmail.com</a>.</p>
           </section>
         </div>
       </div>

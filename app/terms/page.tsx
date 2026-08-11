@@ -56,7 +56,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="font-semibold text-gray-900 text-base mb-2">9. Contact</h2>
-            <p>For questions about these Terms, contact us at <a href="mailto:support@aquagas.shop" className="text-water-600 font-medium">support@aquagas.shop</a>.</p>
+            <p>For questions about these Terms, contact us at <a href="mailto:aquagas.business@gmail.com" className="text-water-600 font-medium">aquagas.business@gmail.com</a>.</p>
           </section>
         </div>
       </div>

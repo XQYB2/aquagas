@@ -2,10 +2,25 @@ import Link from 'next/link'
 
 const RELEASES = [
   {
-    version: '1.5.0',
+    version: '1.5.1',
     date: 'August 11, 2025',
     label: 'Latest',
     labelColor: 'bg-water-100 text-water-700',
+    changes: [
+      {
+        type: 'fix',
+        items: [
+          'Support email updated to aquagas.business@gmail.com across all pages',
+          'Terms & Conditions and Privacy Policy contact details corrected',
+        ],
+      },
+    ],
+  },
+  {
+    version: '1.5.0',
+    date: 'August 11, 2025',
+    label: 'Release',
+    labelColor: 'bg-gray-100 text-gray-600',
     changes: [
       {
         type: 'new',
@@ -250,7 +265,7 @@ export default function ChangelogPage() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-10">
-          AquaGas v1.5.0 · <a href="mailto:support@aquagas.shop" className="hover:text-gray-600">support@aquagas.shop</a>
+          AquaGas v1.5.1 · <a href="mailto:aquagas.business@gmail.com" className="hover:text-gray-600">aquagas.business@gmail.com</a>
         </p>
       </div>
     </div>
