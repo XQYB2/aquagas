@@ -30,8 +30,9 @@ export default function AboutPage() {
           Now available in the Philippines
         </div>
         <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-5 leading-tight text-balance">
-          AquaGas — Water & LPG<br className="hidden md:block" /> delivered to your door
+          AquaGas
         </h1>
+        <p className="text-xl text-gray-600 font-semibold mb-3">Water & LPG delivered to your door</p>
         <p className="text-lg text-gray-500 max-w-xl mx-auto mb-8 leading-relaxed">
           AquaGas connects you with trusted local water refilling stations and LPG gas suppliers. Order in minutes, track in real time, pay on delivery.
         </p>
