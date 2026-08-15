@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 export async function GET(req: NextRequest) {
   const { origin, searchParams } = new URL(req.url)
   const next = searchParams.get('next')
+  const code = searchParams.get('code')
 
-  // Mobile app flow — WebBrowser.openAuthSessionAsync detects the redirect
-  // back to this URL and closes automatically, returning the full URL to the app
-  // which then extracts tokens from the hash fragment.
-  // We just need to return a minimal page so the browser has something to show
-  // for the brief moment before WebBrowser closes it.
+  // Mobile app flow — return a page that redirects the hash to the aquagas:// deep link
   if (next === 'app') {
-    // The hash fragment (#access_token=...) is only available client-side.
-    // This page reads the hash and redirects to the Expo deep link so
-    // WebBrowser.openAuthSessionAsync detects the aquagas:// scheme and closes.
     return new NextResponse(
       `<!doctype html><html><head><meta charset="utf-8">
       <style>body{font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0f9ff;}
@@ -30,6 +26,40 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  // Web flow — redirect to session handler
-  return NextResponse.redirect(`${origin}/auth/session`)
+  // Web flow — exchange the auth code for a session
+  if (code) {
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll: () => cookieStore.getAll(),
+          setAll: (cookiesToSet) => {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          },
+        },
+      }
+    )
+
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (!error && data.session) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.session.user.id)
+        .single()
+
+      if (profile?.role === 'provider') {
+        return NextResponse.redirect(`${origin}/provider`)
+      }
+      return NextResponse.redirect(`${origin}/home`)
+    }
+  }
+
+  // Fallback — no code or exchange failed
+  return NextResponse.redirect(`${origin}/login?error=oauth_failed`)
 }
