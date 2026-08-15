@@ -15,6 +15,7 @@ Your role:
 - Answer questions about pricing, delivery fees, and estimated delivery times
 - Guide users on placing orders, tracking deliveries, and managing their account
 - Explain product differences (alkaline vs distilled water, LPG tank sizes: 11kg, 22kg)
+- When a customer asks to add a product to cart, respond with CART_ACTION JSON on its own line
 
 Tone: Friendly, concise. 2-4 sentences max or a short list.
 Never discuss topics unrelated to water/LPG delivery or the AquaGas app.
@@ -23,7 +24,13 @@ FORMATTING RULES (strictly follow):
 - Never use markdown: no **, no *, no #, no __, no backticks, no bullet dashes
 - For lists, use plain numbered lines like: "1. Item one" or just new lines
 - Keep responses short and conversational — like a chat message, not a document
-- Order info format: "Order #XXXXXX — Status (Store Name)" on its own line`
+- Order info format: "Order #XXXXXX — Status (Store Name)" on its own line
+
+CART ACTION RULES:
+- When the user asks to add a specific product to cart and it exists in CONTEXT, include this on its own line at the END of your response:
+  CART_ACTION:{"product_id":"<id>","product_name":"<name>","price":<number>,"unit":"<unit>","category":"<water|lpg>","provider_id":"<id>","provider_name":"<name>","delivery_fee":<number>}
+- Only include CART_ACTION if you have the actual product_id from the CONTEXT. Never guess IDs.
+- If multiple products match, pick the cheapest available one and mention it.`
 
 async function getContext(userMessage: string, userId?: string): Promise<string> {
   const sb = createClient(
@@ -33,7 +40,7 @@ async function getContext(userMessage: string, userId?: string): Promise<string>
 
   const msg = userMessage.toLowerCase()
   const wantsProviders = msg.includes('provider') || msg.includes('store') || msg.includes('station') || msg.includes('open') || msg.includes('who') || msg.includes('where') || msg.includes('available')
-  const wantsProducts = msg.includes('product') || msg.includes('price') || msg.includes('water') || msg.includes('lpg') || msg.includes('gas') || msg.includes('gallon') || msg.includes('tank') || msg.includes('cost') || msg.includes('how much')
+  const wantsProducts = msg.includes('product') || msg.includes('price') || msg.includes('water') || msg.includes('lpg') || msg.includes('gas') || msg.includes('gallon') || msg.includes('tank') || msg.includes('cost') || msg.includes('how much') || msg.includes('add') || msg.includes('cart') || msg.includes('order') || msg.includes('buy')
   const wantsOrders = msg.includes('order') || msg.includes('pending') || msg.includes('status') || msg.includes('track') || msg.includes('delivery') || msg.includes('my order') || msg.includes('recent') || msg.includes('latest') || msg.includes('last order') || msg.includes('placed')
 
   const parts: string[] = []
@@ -75,13 +82,13 @@ async function getContext(userMessage: string, userId?: string): Promise<string>
   if (wantsProducts) {
     const { data: products } = await sb
       .from('products')
-      .select('name, category, price, unit, description, is_available, providers(store_name)')
+      .select('id, name, category, price, unit, description, is_available, provider_id, providers(store_name, delivery_fee)')
       .eq('is_available', true)
       .limit(20)
 
     if (products && products.length > 0) {
       parts.push('AVAILABLE PRODUCTS:\n' + products.map((p: any) =>
-        `- ${p.name} | Category: ${p.category} | Price: ₱${p.price}/${p.unit} | Store: ${p.providers?.store_name ?? 'Unknown'}${p.description ? ' | ' + p.description : ''}`
+        `- ID:${p.id} | ${p.name} | Category: ${p.category} | Price: ₱${p.price}/${p.unit} | Store: ${p.providers?.store_name ?? 'Unknown'} | ProviderID:${p.provider_id} | DeliveryFee:${p.providers?.delivery_fee ?? 0}${p.description ? ' | ' + p.description : ''}`
       ).join('\n'))
     }
   }
@@ -161,9 +168,21 @@ export async function POST(req: NextRequest) {
           systemInstruction: SYSTEM_PROMPT,
         })
         const result = await model.generateContent({ contents })
-        const text = result.response.text()
-        console.log(`[AquaBot] responded with ${modelName}`)
-        return NextResponse.json({ reply: text }, { headers: CORS_HEADERS })
+        const raw = result.response.text()
+
+        // Extract CART_ACTION if present
+        let cartAction = null
+        let reply = raw
+        const cartMatch = raw.match(/CART_ACTION:(\{.*?\})/s)
+        if (cartMatch) {
+          try {
+            cartAction = JSON.parse(cartMatch[1])
+          } catch {}
+          reply = raw.replace(/CART_ACTION:\{.*?\}/s, '').trim()
+        }
+
+        console.log(`[AquaBot] responded with ${modelName}${cartAction ? ' + cartAction' : ''}`)
+        return NextResponse.json({ reply, cartAction }, { headers: CORS_HEADERS })
       } catch (err: any) {
         if (isRetryableError(err)) {
           console.warn(`[AquaBot] ${modelName} skipped: ${err?.message?.slice(0, 80)}`)

@@ -25,8 +25,9 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'gcash'>('cod')
-  const [gcashEnabled, setGcashEnabled] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'qrph'>('cod')
+  const [qrUrl, setQrUrl] = useState<string | null>(null)
+  const [qrModalOpen, setQrModalOpen] = useState(false)
   const [deliveryType, setDeliveryType] = useState<'standard' | 'batch'>('standard')
   const [batchSlots, setBatchSlots] = useState<{ id: string; day_of_week: number; time_hhmm: string; max_orders: number; cutoff_minutes: number }[]>([])
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
@@ -60,19 +61,16 @@ export default function CheckoutPage() {
       })
   }, [user])
 
-  // Check if this provider has GCash (Konfirma) configured
+  // Fetch store coordinates
   useEffect(() => {
     if (!state.provider_id) return
     supabase
       .from('providers')
-      .select('konfirma_pk, konfirma_sk, konfirma_wallet_id, lat, lng')
+      .select('lat, lng')
       .eq('id', state.provider_id)
       .single()
       .then(({ data }) => {
         if (data?.lat && data?.lng) setStoreCoord({ lat: data.lat, lng: data.lng })
-        const enabled = !!(data?.konfirma_pk && data?.konfirma_sk && data?.konfirma_wallet_id)
-        setGcashEnabled(enabled)
-        if (!enabled) setPaymentMethod('cod')
       })
   }, [state.provider_id])
 
@@ -155,7 +153,7 @@ export default function CheckoutPage() {
       .insert({
         customer_id: user.id,
         provider_id: state.provider_id,
-        status: paymentMethod === 'gcash' ? 'pending_payment' : 'placed',
+        status: paymentMethod === 'qrph' ? 'pending_payment' : 'placed',
         total_amount: orderTotal,
         delivery_address: address,
         delivery_lat: deliveryLat,
@@ -189,26 +187,26 @@ export default function CheckoutPage() {
       return
     }
 
-    // GCash: hand the order off to Konfirma and send the customer to the hosted
-    // payment page. The order stays unpaid until Konfirma's webhook confirms it.
-    if (paymentMethod === 'gcash') {
+    // QR Ph: generate QR code and show it in a modal
+    if (paymentMethod === 'qrph') {
       const res = await fetch('/api/payment/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id: order.id, amount: orderTotal }),
+        body: JSON.stringify({ order_id: order.id }),
       })
-      let data: any = {}
-      try { data = await res.json() } catch { /* empty body — server crashed */ }
-      if (!res.ok || !data.payment_url) {
-        // GCash session failed — delete the orphaned order so it doesn't show up
+      let json: any = {}
+      try { json = await res.json() } catch {}
+      if (!res.ok || !json.qr_url) {
         await supabase.from('order_items').delete().eq('order_id', order.id)
         await supabase.from('orders').delete().eq('id', order.id)
-        setError(data.error || 'Could not start GCash payment. Please try again.')
+        setError(json.error || 'Could not generate QR code. Please try again.')
         setLoading(false)
         return
       }
       dispatch({ type: 'CLEAR_CART' })
-      window.location.href = data.payment_url
+      setQrUrl(json.qr_url)
+      setQrModalOpen(true)
+      setLoading(false)
       return
     }
 
@@ -622,28 +620,29 @@ export default function CheckoutPage() {
               </div>
             </button>
 
-            {gcashEnabled && (
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('gcash')}
-                className={`w-full flex items-center gap-3 rounded-xl p-4 border transition-colors ${
-                  paymentMethod === 'gcash' ? 'bg-blue-50 border-blue-300' : 'bg-white border-gray-200'
-                }`}
-              >
-                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 font-bold text-sm">
-                  G
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-gray-900 text-sm">GCash</p>
-                  <p className="text-xs text-gray-500">Pay now via GCash before delivery</p>
-                </div>
-                <div className={`ml-auto w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  paymentMethod === 'gcash' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
-                }`}>
-                  {paymentMethod === 'gcash' && <span className="text-white text-xs">✓</span>}
-                </div>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('qrph')}
+              className={`w-full flex items-center gap-3 rounded-xl p-4 border transition-colors ${
+                paymentMethod === 'qrph' ? 'bg-water-50 border-water-300' : 'bg-white border-gray-200'
+              }`}
+            >
+              <div className="w-10 h-10 bg-water-100 rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-water-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+                  <rect x="14" y="14" width="3" height="3" rx="0.5"/><rect x="18" y="14" width="3" height="3" rx="0.5"/><rect x="14" y="18" width="3" height="3" rx="0.5"/><rect x="18" y="18" width="3" height="3" rx="0.5"/>
+                </svg>
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900 text-sm">QR Ph (InstaPay)</p>
+                <p className="text-xs text-gray-500">Scan with any banking app — instant transfer</p>
+              </div>
+              <div className={`ml-auto w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                paymentMethod === 'qrph' ? 'border-water-500 bg-water-500' : 'border-gray-300'
+              }`}>
+                {paymentMethod === 'qrph' && <span className="text-white text-xs">✓</span>}
+              </div>
+            </button>
           </div>
         </div>
 
@@ -667,12 +666,49 @@ export default function CheckoutPage() {
             </span>
           ) : (() => {
             const amt = deliveryType === 'batch' ? subtotal.toFixed(0) : total.toFixed(0)
-            if (paymentMethod === 'gcash') return `Pay with GCash — ₱${amt}`
+            if (paymentMethod === 'qrph') return `Pay via QR Ph — ₱${amt}`
             if (deliveryType === 'batch') return `Schedule Batch Order — ₱${amt}`
             return `Place Order — ₱${amt}`
           })()}
         </button>
       </div>
+
+      {/* QR Ph Payment Modal */}
+      {qrModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center gap-5">
+            <h2 className="text-xl font-bold text-gray-900">Scan to Pay</h2>
+            <p className="text-sm text-gray-500 text-center">
+              Open your banking app (BDO, BPI, GCash, Maya, UnionBank…) and scan this QR code to pay via InstaPay.
+            </p>
+            {qrUrl ? (
+              <img src={qrUrl} alt="QR Ph payment code" className="w-56 h-56 rounded-xl border border-gray-100" />
+            ) : (
+              <div className="w-56 h-56 flex items-center justify-center">
+                <svg className="animate-spin w-8 h-8 text-water-500" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+              </div>
+            )}
+            <p className="text-xs text-gray-400 text-center">
+              Your order is saved. Once payment is confirmed, the store will prepare your delivery.
+            </p>
+            <button
+              onClick={() => { setQrModalOpen(false); router.push('/orders') }}
+              className="w-full py-3.5 rounded-2xl bg-water-500 hover:bg-water-600 text-white font-bold transition-colors"
+            >
+              I've Paid — Go to Orders
+            </button>
+            <button
+              onClick={() => setQrModalOpen(false)}
+              className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Pay later from Orders
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
