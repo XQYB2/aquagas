@@ -173,12 +173,12 @@ export async function POST(req: NextRequest) {
         // Extract CART_ACTION if present
         let cartAction = null
         let reply = raw
-        const cartMatch = raw.match(/CART_ACTION:(\{.*?\})/s)
+        const cartMatch = raw.match(/CART_ACTION:(\{[\s\S]*?\})/)
         if (cartMatch) {
           try {
             cartAction = JSON.parse(cartMatch[1])
           } catch {}
-          reply = raw.replace(/CART_ACTION:\{.*?\}/s, '').trim()
+          reply = raw.replace(/CART_ACTION:\{[\s\S]*?\}/, '').trim()
         }
 
         console.log(`[AquaBot] responded with ${modelName}${cartAction ? ' + cartAction' : ''}`)
