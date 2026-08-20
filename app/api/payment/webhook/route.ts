@@ -51,32 +51,34 @@ export async function POST(req: NextRequest) {
 
   console.log('[PayMongo webhook] event:', eventType)
 
+  // Sources API: source.chargeable fires when QR is scanned and payment confirmed
+  if (eventType === 'source.chargeable') {
+    const sourceId: string | undefined = resource?.id
+    if (sourceId) {
+      await admin
+        .from('orders')
+        .update({ payment_status: 'paid', status: 'placed' })
+        .eq('paymongo_intent_id', sourceId)
+        .in('status', ['pending_payment'])
+    }
+  }
+
+  // Payment Intent API events (fallback)
   if (eventType === 'payment.paid') {
-    // For QR Ph, the payment has a payment_intent_id linking back to our intent
     const intentId: string | undefined =
-      resource?.attributes?.payment_intent_id ??
-      resource?.attributes?.metadata?.payment_intent_id
-
-    const externalRef: string | undefined = resource?.attributes?.external_reference_number
-
+      resource?.attributes?.payment_intent_id ?? resource?.id
     if (intentId) {
       await admin
         .from('orders')
         .update({ payment_status: 'paid', status: 'placed' })
         .eq('paymongo_intent_id', intentId)
         .in('status', ['pending_payment'])
-    } else if (externalRef) {
-      // Fallback: match by order id suffix if no intent id
-      await admin
-        .from('orders')
-        .update({ payment_status: 'paid', status: 'placed' })
-        .ilike('id', `%${externalRef}`)
-        .in('status', ['pending_payment'])
     }
   }
 
   if (eventType === 'payment.failed') {
-    const intentId: string | undefined = resource?.attributes?.payment_intent_id
+    const intentId: string | undefined =
+      resource?.attributes?.payment_intent_id ?? resource?.id
     if (intentId) {
       await admin
         .from('orders')
@@ -87,13 +89,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (eventType === 'qrph.expired') {
-    // QR code expired before payment — mark as failed so order doesn't stay stuck
-    const intentId: string | undefined = resource?.attributes?.payment_intent_id
-    if (intentId) {
+    const sourceId: string | undefined = resource?.id
+    if (sourceId) {
       await admin
         .from('orders')
         .update({ payment_status: 'failed' })
-        .eq('paymongo_intent_id', intentId)
+        .eq('paymongo_intent_id', sourceId)
         .in('status', ['pending_payment'])
     }
   }
