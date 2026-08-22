@@ -3,11 +3,14 @@
 import { useParams, useRouter } from 'next/navigation'
 import { useProvider } from '@/lib/provider-context'
 import { OrderStatusBadge, getNextStatuses, STATUS_LABELS, STATUS_DESCRIPTIONS } from '@/components/provider/OrderStatusBadge'
-import { ArrowLeft, Phone, MapPin, Banknote, Clock, AlertTriangle, Package } from 'lucide-react'
+import { ArrowLeft, Phone, MapPin, Banknote, Clock, AlertTriangle, Package, Camera, Upload } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { OrderStatus } from '@/lib/provider-context'
 import dynamic from 'next/dynamic'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/lib/auth-context'
+import { OrderChat } from '@/components/OrderChat'
 
 const DeliveryMap = dynamic(
   () => import('@/components/maps/DeliveryMap').then(m => m.DeliveryMap),
@@ -27,11 +30,16 @@ const ACTION_STYLES: Partial<Record<OrderStatus, string>> = {
 export default function ProviderOrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { orders, updateOrderStatus } = useProvider()
+  const { user } = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [estimatedDelivery, setEstimatedDelivery] = useState('')
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
+  const [proofUrl, setProofUrl] = useState<string | null>((orders.find(o => o.id === id) as any)?.delivery_proof_url ?? null)
+  const [uploadingProof, setUploadingProof] = useState(false)
+  const [proofError, setProofError] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const order = orders.find(o => o.id === id)
 
@@ -65,6 +73,21 @@ export default function ProviderOrderDetailPage() {
     updateOrderStatus(id, 'cancelled', cancelReason.trim() ? { cancel_reason: cancelReason.trim() } : undefined)
     setLoading(null)
     router.push('/provider/orders')
+  }
+
+  async function handleProofUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingProof(true)
+    setProofError('')
+    const ext = file.name.split('.').pop()
+    const path = `delivery-proofs/${id}-${Date.now()}.${ext}`
+    const { error: uploadError } = await supabase.storage.from('order-proofs').upload(path, file, { upsert: true })
+    if (uploadError) { setProofError('Upload failed. Try again.'); setUploadingProof(false); return }
+    const { data: { publicUrl } } = supabase.storage.from('order-proofs').getPublicUrl(path)
+    await supabase.from('orders').update({ delivery_proof_url: publicUrl, delivered_at: new Date().toISOString() }).eq('id', id)
+    setProofUrl(publicUrl)
+    setUploadingProof(false)
   }
 
   const subtotal = order.items.reduce((s, i) => s + i.unit_price * i.quantity, 0)
@@ -270,7 +293,64 @@ export default function ProviderOrderDetailPage() {
           </div>
         </div>
 
+        {/* Proof of Delivery */}
         {order.status === 'delivered' && (
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <Camera className="w-4 h-4 text-green-500" />
+              <h2 className="font-semibold text-gray-900 text-sm">Proof of Delivery</h2>
+            </div>
+
+            {proofUrl ? (
+              <div>
+                <img src={proofUrl} alt="Delivery proof" className="w-full rounded-xl border border-gray-100 object-cover max-h-64" />
+                <p className="text-xs text-green-600 font-semibold mt-2">✅ Proof uploaded successfully</p>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="mt-2 text-xs text-gray-400 hover:text-gray-600 underline"
+                >
+                  Replace photo
+                </button>
+              </div>
+            ) : (
+              <div>
+                <p className="text-xs text-gray-500 mb-3">Upload a photo as proof that this order was delivered to the customer.</p>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingProof}
+                  className="w-full border-2 border-dashed border-gray-200 hover:border-water-300 rounded-xl py-6 flex flex-col items-center gap-2 transition-colors disabled:opacity-50"
+                >
+                  {uploadingProof ? (
+                    <>
+                      <svg className="animate-spin w-6 h-6 text-water-500" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                      </svg>
+                      <span className="text-xs text-gray-400">Uploading…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-6 h-6 text-gray-300" />
+                      <span className="text-xs text-gray-400">Tap to upload delivery photo</span>
+                    </>
+                  )}
+                </button>
+                {proofError && <p className="text-xs text-red-500 mt-2">{proofError}</p>}
+              </div>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleProofUpload}
+            />
+          </div>
+        )}
+
+        {order.status === 'delivered' && !proofUrl && (
           <div className="bg-green-50 border border-green-100 rounded-2xl p-4 text-center">
             <p className="text-green-700 font-semibold text-sm">✅ Order delivered successfully!</p>
           </div>
@@ -284,6 +364,17 @@ export default function ProviderOrderDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Live chat with customer */}
+      {user && order.status !== 'pending_payment' && (
+        <OrderChat
+          orderId={order.id}
+          currentUserId={user.id}
+          currentRole="provider"
+          otherPartyName={order.customer_name}
+          orderStatus={order.status}
+        />
+      )}
 
       {/* Cancel reason modal */}
       {showCancelModal && (

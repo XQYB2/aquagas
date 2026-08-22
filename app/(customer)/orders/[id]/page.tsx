@@ -5,8 +5,9 @@ import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import { StatusStepper, StatusBadge } from '@/components/customer/StatusBadge'
-import { ArrowLeft, MapPin, Phone, Banknote, AlertCircle, Star, CalendarClock, Truck } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, Banknote, AlertCircle, Star, CalendarClock, Truck, Camera } from 'lucide-react'
 import Link from 'next/link'
+import { OrderChat } from '@/components/OrderChat'
 
 type Order = {
   id: string
@@ -24,6 +25,8 @@ type Order = {
   delivery_type: 'standard' | 'batch'
   scheduled_at: string | null
   cancel_reason: string | null
+  delivery_proof_url: string | null
+  delivered_at: string | null
   items: { id: string; product_name: string; quantity: number; unit_price: number }[]
 }
 
@@ -53,7 +56,7 @@ export default function OrderDetailPage() {
       setLoading(true)
       const { data: o } = await supabase
         .from('orders')
-        .select('id, status, total_amount, delivery_address, estimated_delivery, payment_method, payment_status, delivery_type, scheduled_at, cancel_reason, created_at, provider_id, providers(store_name, delivery_fee, service_type)')
+        .select('id, status, total_amount, delivery_address, estimated_delivery, payment_method, payment_status, delivery_type, scheduled_at, cancel_reason, delivery_proof_url, delivered_at, created_at, provider_id, providers(store_name, delivery_fee, service_type)')
         .eq('id', id)
         .single()
 
@@ -85,6 +88,8 @@ export default function OrderDetailPage() {
         delivery_type: op.delivery_type || 'standard',
         scheduled_at: op.scheduled_at || null,
         cancel_reason: op.cancel_reason || null,
+        delivery_proof_url: op.delivery_proof_url || null,
+        delivered_at: op.delivered_at || null,
         items: (items || []).map((i: any) => ({
           id: i.id, product_name: i.products?.name || 'Item', quantity: i.quantity, unit_price: i.unit_price,
         })),
@@ -407,6 +412,26 @@ export default function OrderDetailPage() {
           )
         })()}
 
+        {/* Proof of Delivery */}
+        {order.status === 'delivered' && order.delivery_proof_url && (
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <h2 className="font-semibold text-gray-900 text-sm mb-3 flex items-center gap-2">
+              <Camera className="w-4 h-4 text-green-500" />
+              Proof of Delivery
+            </h2>
+            <img
+              src={order.delivery_proof_url}
+              alt="Delivery proof"
+              className="w-full rounded-xl border border-gray-100 object-cover max-h-64"
+            />
+            {order.delivered_at && (
+              <p className="text-xs text-gray-400 mt-2">
+                Delivered at {new Date(order.delivered_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </p>
+            )}
+          </div>
+        )}
+
         {order.status === 'delivered' && (
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <p className="text-green-700 font-semibold text-sm mb-4">✅ Order Delivered — Thank you!</p>
@@ -455,6 +480,17 @@ export default function OrderDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Live chat with provider */}
+      {user && order.status !== 'pending_payment' && (
+        <OrderChat
+          orderId={order.id}
+          currentUserId={user.id}
+          currentRole="customer"
+          otherPartyName={order.provider_name}
+          orderStatus={order.status}
+        />
+      )}
     </div>
   )
 }

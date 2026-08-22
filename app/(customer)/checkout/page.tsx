@@ -603,18 +603,18 @@ export default function CheckoutPage() {
               type="button"
               onClick={() => setPaymentMethod('cod')}
               className={`w-full flex items-center gap-3 rounded-xl p-4 border transition-colors ${
-                paymentMethod === 'cod' ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200'
+                paymentMethod === 'cod' ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
               }`}
             >
-              <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                <Banknote className="w-5 h-5 text-green-600" />
+              <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+                <Banknote className="w-5 h-5 text-green-600 dark:text-green-400" />
               </div>
               <div className="text-left">
-                <p className="font-semibold text-gray-900 text-sm">Cash on Delivery</p>
-                <p className="text-xs text-gray-500">Pay when your order arrives</p>
+                <p className="font-semibold text-gray-900 dark:text-white text-sm">Cash on Delivery</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Pay when your order arrives</p>
               </div>
               <div className={`ml-auto w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                paymentMethod === 'cod' ? 'border-green-500 bg-green-500' : 'border-gray-300'
+                paymentMethod === 'cod' ? 'border-green-500 bg-green-500' : 'border-gray-300 dark:border-gray-600'
               }`}>
                 {paymentMethod === 'cod' && <span className="text-white text-xs">✓</span>}
               </div>
@@ -624,21 +624,21 @@ export default function CheckoutPage() {
               type="button"
               onClick={() => setPaymentMethod('qrph')}
               className={`w-full flex items-center gap-3 rounded-xl p-4 border transition-colors ${
-                paymentMethod === 'qrph' ? 'bg-water-50 border-water-300' : 'bg-white border-gray-200'
+                paymentMethod === 'qrph' ? 'bg-water-50 dark:bg-water-900/20 border-water-300 dark:border-water-600' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
               }`}
             >
-              <div className="w-10 h-10 bg-water-100 rounded-xl flex items-center justify-center">
-                <svg className="w-5 h-5 text-water-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="w-10 h-10 bg-water-100 dark:bg-water-900/30 rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-water-600 dark:text-water-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
                   <rect x="14" y="14" width="3" height="3" rx="0.5"/><rect x="18" y="14" width="3" height="3" rx="0.5"/><rect x="14" y="18" width="3" height="3" rx="0.5"/><rect x="18" y="18" width="3" height="3" rx="0.5"/>
                 </svg>
               </div>
               <div className="text-left">
-                <p className="font-semibold text-gray-900 text-sm">QR Ph (InstaPay)</p>
-                <p className="text-xs text-gray-500">Scan with any banking app — instant transfer</p>
+                <p className="font-semibold text-gray-900 dark:text-white text-sm">QR Ph (InstaPay)</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Scan with any banking app — instant transfer</p>
               </div>
               <div className={`ml-auto w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                paymentMethod === 'qrph' ? 'border-water-500 bg-water-500' : 'border-gray-300'
+                paymentMethod === 'qrph' ? 'border-water-500 bg-water-500' : 'border-gray-300 dark:border-gray-600'
               }`}>
                 {paymentMethod === 'qrph' && <span className="text-white text-xs">✓</span>}
               </div>
