@@ -479,18 +479,17 @@ export default function OrderDetailPage() {
             )}
           </div>
         )}
+        {/* Chat with provider */}
+        {user && order.status !== 'pending_payment' && order.status !== 'cancelled' && (
+          <OrderChat
+            orderId={order.id}
+            currentUserId={user.id}
+            currentRole="customer"
+            otherPartyName={order.provider_name}
+            orderStatus={order.status}
+          />
+        )}
       </div>
-
-      {/* Live chat with provider */}
-      {user && order.status !== 'pending_payment' && (
-        <OrderChat
-          orderId={order.id}
-          currentUserId={user.id}
-          currentRole="customer"
-          otherPartyName={order.provider_name}
-          orderStatus={order.status}
-        />
-      )}
     </div>
   )
 }

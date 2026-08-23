@@ -293,6 +293,17 @@ export default function ProviderOrderDetailPage() {
           </div>
         </div>
 
+        {/* Chat with customer */}
+        {user && order.status !== 'cancelled' && (
+          <OrderChat
+            orderId={order.id}
+            currentUserId={user.id}
+            currentRole="provider"
+            otherPartyName={order.customer_name}
+            orderStatus={order.status}
+          />
+        )}
+
         {/* Proof of Delivery */}
         {order.status === 'delivered' && (
           <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
@@ -364,17 +375,6 @@ export default function ProviderOrderDetailPage() {
           </div>
         )}
       </div>
-
-      {/* Live chat with customer */}
-      {user && order.status !== 'pending_payment' && (
-        <OrderChat
-          orderId={order.id}
-          currentUserId={user.id}
-          currentRole="provider"
-          otherPartyName={order.customer_name}
-          orderStatus={order.status}
-        />
-      )}
 
       {/* Cancel reason modal */}
       {showCancelModal && (
