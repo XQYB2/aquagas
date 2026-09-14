@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { CartProvider } from '@/lib/cart-context'
@@ -16,6 +16,12 @@ export const metadata: Metadata = {
     url: 'https://aquagas.shop',
   },
   verification: { google: '36Dlx44_Ig_hDYkQ6CtJpKj3KS7pb87q_MUyAbH-nKk' },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

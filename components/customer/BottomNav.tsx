@@ -6,7 +6,7 @@ import { Home, ShoppingBag, ClipboardList, User } from 'lucide-react'
 import { useCart } from '@/lib/cart-context'
 
 const NAV_ITEMS = [
-  { href: '/', icon: Home, label: 'Home' },
+  { href: '/home', icon: Home, label: 'Home' },
   { href: '/checkout', icon: ShoppingBag, label: 'Cart' },
   { href: '/orders', icon: ClipboardList, label: 'Orders' },
   { href: '/profile', icon: User, label: 'Profile' },
@@ -17,9 +17,9 @@ export function BottomNav() {
   const { totalItems } = useCart()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
-      <div className="bg-white/90 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 shadow-lg px-2 pb-safe">
-        <div className="flex items-end justify-around max-w-md mx-auto h-16">
+    <nav aria-label="Customer navigation" className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+      <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 shadow-[0_-8px_24px_rgba(15,23,42,0.06)] px-2 pb-[env(safe-area-inset-bottom)]">
+        <div className="grid h-[var(--mobile-nav-height)] max-w-md grid-cols-4 mx-auto">
           {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
             const isActive = pathname === href
             const isCart = href === '/checkout'
@@ -29,7 +29,12 @@ export function BottomNav() {
 
             if (isCart) {
               return (
-                <Link key={href} href={href} className="flex flex-col items-center justify-center gap-0.5 py-2 px-3 relative">
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={isActive ? 'page' : undefined}
+                  className="relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-water-500"
+                >
                   <div className={dotClass}>
                     <Icon className={iconClass} />
                     {totalItems > 0 && (
@@ -44,7 +49,12 @@ export function BottomNav() {
             }
 
             return (
-              <Link key={href} href={href} className="flex flex-col items-center justify-center gap-0.5 py-2 px-3">
+              <Link
+                key={href}
+                href={href}
+                aria-current={isActive ? 'page' : undefined}
+                className="flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-water-500"
+              >
                 <div className={dotClass}>
                   <Icon className={iconClass} />
                 </div>

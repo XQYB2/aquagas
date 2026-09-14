@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation'
 import { useProvider } from '@/lib/provider-context'
 import { OrderStatusBadge, getNextStatuses, STATUS_LABELS, STATUS_DESCRIPTIONS } from '@/components/provider/OrderStatusBadge'
-import { ArrowLeft, Phone, MapPin, Banknote, Clock, AlertTriangle, Package, Camera, Upload } from 'lucide-react'
+import { Phone, MapPin, Banknote, Clock, AlertTriangle, Package, Camera, Upload } from 'lucide-react'
 import Link from 'next/link'
 import { useRef, useState } from 'react'
 import type { OrderStatus } from '@/lib/provider-context'
@@ -11,6 +11,7 @@ import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import { OrderChat } from '@/components/OrderChat'
+import { BackLink } from '@/components/navigation/BackLink'
 
 const DeliveryMap = dynamic(
   () => import('@/components/maps/DeliveryMap').then(m => m.DeliveryMap),
@@ -109,9 +110,7 @@ export default function ProviderOrderDetailPage() {
     <div className="max-w-2xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/provider/orders" className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-          <ArrowLeft className="w-4 h-4 text-gray-600" />
-        </Link>
+        <BackLink href="/provider/orders" label="Back to orders" variant="surface" iconOnly />
         <div className="flex-1">
           <h1 className="text-lg font-bold text-gray-900">Order #{order.id.slice(-6).toUpperCase()}</h1>
           <p className="text-xs text-gray-400">Received {timeAgo(order.created_at)}</p>

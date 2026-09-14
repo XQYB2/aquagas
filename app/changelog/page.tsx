@@ -1,4 +1,13 @@
-import Link from 'next/link'
+import type { Metadata } from 'next'
+
+import { BackLink } from '@/components/navigation/BackLink'
+import { PublicFooter } from '@/components/public/PublicFooter'
+import { PublicHeader } from '@/components/public/PublicHeader'
+
+export const metadata: Metadata = {
+  title: 'Changelog | AquaGas',
+  description: 'See the latest AquaGas features, improvements, and fixes.',
+}
 
 const RELEASES = [
   {
@@ -204,29 +213,20 @@ const TYPE_STYLE: Record<string, { label: string; color: string; dot: string }> 
 
 export default function ChangelogPage() {
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-2xl mx-auto">
+    <div className="flex min-h-screen flex-col bg-gray-50">
+      <PublicHeader />
 
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-10">
-          <Link href="/">
-            <img src="/logo.svg" alt="AquaGas" className="w-10 h-10 rounded-xl" />
-          </Link>
-          <div>
-            <p className="font-black text-lg leading-tight">
-              <span className="text-water-600">Aqua</span><span className="text-red-600">Gas</span>
-            </p>
-            <p className="text-xs text-gray-400">Changelog</p>
-          </div>
-        </div>
+      <main className="flex-1 px-4 py-8 sm:py-12">
+        <div className="mx-auto max-w-2xl">
+          <BackLink href="/" label="Back to home" variant="inline" className="mb-5" />
 
-        <h1 className="text-3xl font-bold text-gray-900 mb-1">What's new</h1>
-        <p className="text-gray-400 text-sm mb-10">All notable changes to AquaGas are documented here.</p>
+          <h1 className="mb-1 text-3xl font-bold text-gray-900">What&apos;s new</h1>
+          <p className="mb-8 text-sm text-gray-500 sm:mb-10">All notable changes to AquaGas are documented here.</p>
 
         {/* Releases */}
         <div className="space-y-6">
           {RELEASES.map(release => (
-            <div key={release.version} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <article key={release.version} className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
               {/* Release header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
                 <div className="flex items-center gap-3">
@@ -260,14 +260,17 @@ export default function ChangelogPage() {
                   )
                 })}
               </div>
-            </div>
+            </article>
           ))}
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-10">
-          AquaGas v1.5.1 · <a href="mailto:aquagas.business@gmail.com" className="hover:text-gray-600">aquagas.business@gmail.com</a>
-        </p>
-      </div>
+          <p className="mt-10 text-center text-xs text-gray-400">
+            AquaGas v1.5.1 · <a href="mailto:aquagas.business@gmail.com" className="hover:text-gray-600">aquagas.business@gmail.com</a>
+          </p>
+        </div>
+      </main>
+
+      <PublicFooter />
     </div>
   )
 }

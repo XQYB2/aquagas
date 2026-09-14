@@ -24,6 +24,7 @@ export function AquaBot() {
   const [hasSpeech, setHasSpeech] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const recognitionRef = useRef<any>(null)
 
   useEffect(() => {
@@ -38,6 +39,19 @@ export function AquaBot() {
       setTimeout(() => inputRef.current?.focus(), 100)
     }
   }, [messages, open])
+
+  useEffect(() => {
+    if (!open) return
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return
+      setOpen(false)
+      requestAnimationFrame(() => triggerRef.current?.focus())
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [open])
 
   function startVoice() {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
@@ -91,8 +105,11 @@ export function AquaBot() {
       {/* Chat panel */}
       {open && (
         <div
-          className="fixed right-4 z-[9999] bottom-24 md:bottom-24 w-[calc(100vw-2rem)] max-w-[360px] flex flex-col rounded-2xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
-          style={{ maxHeight: 'calc(100dvh - 10rem)' }}
+          id="aquabot-panel"
+          role="dialog"
+          aria-labelledby="aquabot-title"
+          className="fixed right-4 z-[60] bottom-[calc(var(--mobile-nav-height)+env(safe-area-inset-bottom)+5.5rem)] md:bottom-24 w-[calc(100vw-2rem)] max-w-[360px] flex flex-col rounded-2xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
+          style={{ maxHeight: 'calc(100dvh - var(--mobile-nav-height) - env(safe-area-inset-bottom, 0px) - 8rem)' }}
         >
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-water-500 to-water-700 shrink-0">
@@ -100,13 +117,13 @@ export function AquaBot() {
               <Bot className="w-4 h-4 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white font-semibold text-sm leading-tight">AquaBot</p>
+              <p id="aquabot-title" className="text-white font-semibold text-sm leading-tight">AquaBot</p>
               <p className="text-water-100 text-xs leading-tight">AI Assistant</p>
             </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-800 min-h-0">
+          <div aria-live="polite" className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-800 min-h-0">
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${
@@ -130,7 +147,9 @@ export function AquaBot() {
 
           {/* Input */}
           <form onSubmit={sendMessage} className="flex items-center gap-2 p-3 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 shrink-0">
+            <label htmlFor="aquabot-message" className="sr-only">Message AquaBot</label>
             <input
+              id="aquabot-message"
               ref={inputRef}
               value={input}
               onChange={e => setInput(e.target.value)}
@@ -144,7 +163,7 @@ export function AquaBot() {
                 onClick={listening ? stopVoice : startVoice}
                 disabled={loading}
                 aria-label={listening ? 'Stop recording' : 'Voice input'}
-                className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 ${
+                className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 ${
                   listening
                     ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse'
                     : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'
@@ -156,7 +175,8 @@ export function AquaBot() {
             <button
               type="submit"
               disabled={!input.trim() || loading}
-              className="w-9 h-9 shrink-0 rounded-xl bg-water-500 hover:bg-water-600 text-white flex items-center justify-center transition-colors disabled:opacity-40"
+              aria-label="Send message"
+              className="w-11 h-11 shrink-0 rounded-xl bg-water-700 hover:bg-sky-800 text-white flex items-center justify-center transition-colors disabled:opacity-40"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -166,9 +186,12 @@ export function AquaBot() {
 
       {/* FAB */}
       <button
+        ref={triggerRef}
         onClick={() => setOpen(o => !o)}
-        className="fixed right-4 z-[9999] bottom-4 w-14 h-14 rounded-full bg-gradient-to-br from-water-500 to-water-700 text-white shadow-lg hover:scale-105 active:scale-95 transition-transform flex items-center justify-center"
-        aria-label="Open AquaBot"
+        className="fixed right-4 z-[60] bottom-[calc(var(--mobile-nav-height)+env(safe-area-inset-bottom)+1rem)] md:bottom-4 w-14 h-14 rounded-full bg-gradient-to-br from-water-600 to-water-700 text-white shadow-[0_10px_28px_rgba(2,132,199,0.32)] hover:scale-105 active:scale-95 transition-transform flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-water-700"
+        aria-label={open ? 'Close AquaBot' : 'Open AquaBot'}
+        aria-expanded={open}
+        aria-controls="aquabot-panel"
       >
         {open ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>

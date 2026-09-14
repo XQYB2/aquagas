@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import type { Database } from '@/lib/supabase'
 import Link from 'next/link'
+import { HowAquaGasWorks } from '@/components/HowAquaGasWorks'
 
 type Provider = Database['public']['Tables']['providers']['Row']
 type FilterType = 'all' | 'water' | 'lpg'
@@ -265,23 +266,7 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* How It Works */}
-        <section className="mt-16 bg-white rounded-2xl border border-gray-100 p-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-8 text-center">How AquaGas works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { emoji: '🏪', title: 'Choose a store', desc: 'Browse water stations and LPG suppliers near you.' },
-              { emoji: '🛒', title: 'Add to cart', desc: 'Select your gallons or gas cylinders and quantities.' },
-              { emoji: '🚚', title: 'Get it delivered', desc: 'Cash on delivery — pay when your order arrives.' },
-            ].map((step, i) => (
-              <div key={i} className="text-center">
-                <div className="text-4xl mb-3">{step.emoji}</div>
-                <h3 className="font-semibold text-gray-900 mb-1">{step.title}</h3>
-                <p className="text-gray-500 text-sm">{step.desc}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+        <HowAquaGasWorks className="mt-16" />
       </div>
     </div>
   )

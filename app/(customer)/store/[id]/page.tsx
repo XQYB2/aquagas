@@ -4,10 +4,11 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
 import { useCart } from '@/lib/cart-context'
-import { Star, Clock, Truck, Droplets, Flame, Plus, Minus, ArrowLeft, MapPin, ShoppingCart } from 'lucide-react'
+import { Star, Clock, Truck, Droplets, Flame, Plus, Minus, MapPin, ShoppingCart } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
+import { BackLink } from '@/components/navigation/BackLink'
 
 const StoreMap = dynamic(() => import('@/components/maps/StoreMap').then(m => m.StoreMap), { ssr: false })
 
@@ -159,9 +160,13 @@ export default function StorePage() {
         {provider.logo_url && (
           <img src={provider.logo_url} alt={provider.store_name} className="absolute inset-0 w-full h-full object-cover" />
         )}
-        <Link href="/home" className="absolute top-4 left-4 w-9 h-9 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-colors z-10">
-          <ArrowLeft className="w-4 h-4 text-white" />
-        </Link>
+        <BackLink
+          href="/home"
+          label="Back to stores"
+          variant="inverse"
+          iconOnly
+          className="absolute left-4 top-4 z-10 rounded-full backdrop-blur-sm"
+        />
         {!provider.logo_url && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">

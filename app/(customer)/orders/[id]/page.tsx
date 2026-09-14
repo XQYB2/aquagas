@@ -5,9 +5,10 @@ import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import { StatusStepper, StatusBadge } from '@/components/customer/StatusBadge'
-import { ArrowLeft, MapPin, Phone, Banknote, AlertCircle, Star, CalendarClock, Truck, Camera } from 'lucide-react'
+import { MapPin, Phone, Banknote, AlertCircle, Star, CalendarClock, Truck, Camera } from 'lucide-react'
 import Link from 'next/link'
 import { OrderChat } from '@/components/OrderChat'
+import { BackLink } from '@/components/navigation/BackLink'
 
 type Order = {
   id: string
@@ -200,9 +201,7 @@ export default function OrderDetailPage() {
     <div className="max-w-2xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/orders" className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-          <ArrowLeft className="w-4 h-4 text-gray-600" />
-        </Link>
+        <BackLink href="/orders" label="Back to orders" variant="surface" iconOnly />
         <div>
           <h1 className="text-lg font-bold text-gray-900">Order #{order.id.slice(-6).toUpperCase()}</h1>
           <p className="text-xs text-gray-400">

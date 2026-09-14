@@ -5,9 +5,10 @@ import { useCart } from '@/lib/cart-context'
 import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, MapPin, Truck, Banknote, CheckCircle, BookmarkPlus, Bookmark, Home, Briefcase, Heart, MoreHorizontal, Plus, Minus, Trash2, CalendarClock } from 'lucide-react'
+import { ArrowRight, MapPin, Truck, Banknote, CheckCircle, BookmarkPlus, Bookmark, Home, Briefcase, Heart, MoreHorizontal, Plus, Minus, Trash2, CalendarClock } from 'lucide-react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import { BackLink } from '@/components/navigation/BackLink'
 
 const AddressPicker = dynamic(() => import('@/components/maps/AddressPicker').then(m => m.AddressPicker), { ssr: false })
 
@@ -247,9 +248,7 @@ export default function CheckoutPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 pb-32">
       <div className="flex items-center gap-3 mb-8">
-        <Link href="/home" className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-          <ArrowLeft className="w-4 h-4 text-gray-600" />
-        </Link>
+        <BackLink href="/home" label="Back to stores" variant="surface" iconOnly />
         <h1 className="text-xl font-bold text-gray-900">Checkout</h1>
       </div>
 
@@ -262,7 +261,7 @@ export default function CheckoutPage() {
             <p className="font-bold text-sm">Phone number required</p>
             <p className="text-xs text-red-100">Add your mobile number in your profile to place orders. Click here.</p>
           </div>
-          <ArrowLeft className="w-4 h-4 rotate-180 shrink-0" />
+          <ArrowRight className="w-4 h-4 shrink-0" aria-hidden="true" />
         </Link>
       )}
 
