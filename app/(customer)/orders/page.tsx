@@ -227,7 +227,7 @@ export default function OrdersPage() {
               )}
 
               {/* Cancel payment button for pending GCash orders */}
-              {order.status === 'pending_payment' && order.payment_method === 'gcash' && (
+              {order.status === 'pending_payment' && order.payment_method === 'qrph' && (
                 <div className="mt-3 pt-3 border-t border-gray-100 flex gap-2">
                   <button
                     onClick={e => handleCancelPayment(e, order.id)}

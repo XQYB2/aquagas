@@ -159,12 +159,15 @@ export async function POST(req: NextRequest) {
   }
 
   if (eventType === 'qrph.expired') {
-    const sourceId: string | undefined = resource?.id
-    if (sourceId) {
+    const intentId: string | undefined =
+      resource?.attributes?.payment_intent_id ??
+      resource?.attributes?.payment_intent?.id ??
+      resource?.id
+    if (intentId) {
       await admin
         .from('orders')
         .update({ payment_status: 'unpaid' })
-        .eq('paymongo_intent_id', sourceId)
+        .eq('paymongo_intent_id', intentId)
         .in('status', ['pending_payment'])
     }
   }

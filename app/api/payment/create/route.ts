@@ -20,10 +20,18 @@ function paymongoHeaders(secretKey: string) {
   }
 }
 
+function paymongoPublicHeaders(publicKey: string) {
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Basic ${Buffer.from(`${publicKey}:`).toString('base64')}`,
+  }
+}
+
 export async function POST(req: NextRequest) {
   const secretKey = process.env.PAYMONGO_SECRET_KEY
-  if (!secretKey) {
-    console.error('[PayMongo] PAYMONGO_SECRET_KEY is not configured')
+  const publicKey = process.env.PAYMONGO_PUBLIC_KEY
+  if (!secretKey || !publicKey) {
+    console.error('[PayMongo] PAYMONGO_SECRET_KEY or PAYMONGO_PUBLIC_KEY is not configured')
     return NextResponse.json({ error: 'Payment service is not configured' }, { status: 503 })
   }
 
@@ -100,15 +108,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'A payment session is already being created. Please wait a moment.' }, { status: 409 })
   }
 
-  // Amount in centavos — PayMongo minimum is ₱20 = 2000 centavos
-  const amountCentavos = Math.max(Math.round(order.total_amount * 100), 2000)
+  // Amount is sent in centavos. QR Ph supports transactions from PHP 1.
+  const amountCentavos = Math.max(Math.round(order.total_amount * 100), 100)
 
-  // QR Ph uses the Sources API — create a source and get the QR code directly
-  const appUrl = (process.env.NEXT_PUBLIC_AQUAGAS_URL || req.nextUrl.origin).replace(/\/$/, '')
-  let sourceRes: Response
-  let sourceJson: any
+  const releaseClaim = async () => {
+    await admin
+      .from('orders')
+      .update({ payment_session_started_at: null, payment_session_token: null })
+      .eq('id', order.id)
+      .eq('payment_session_token', attemptId)
+  }
+
   try {
-    sourceRes = await fetch(`${PM_BASE}/sources`, {
+    const intentRes = await fetch(`${PM_BASE}/payment_intents`, {
       method: 'POST',
       headers: paymongoHeaders(secretKey),
       body: JSON.stringify({
@@ -116,51 +128,81 @@ export async function POST(req: NextRequest) {
           attributes: {
             amount: amountCentavos,
             currency: 'PHP',
-            type: 'qrph',
-            redirect: {
-              success: `${appUrl}/orders/${order_id}?payment=success`,
-              failed: `${appUrl}/orders/${order_id}?payment=failed`,
-            },
+            payment_method_allowed: ['qrph'],
+            description: `AquaGas order ${order.id}`,
           },
         },
       }),
     })
-    sourceJson = await sourceRes.json()
+    const intentJson = await intentRes.json().catch(() => ({}))
+    if (!intentRes.ok) {
+      await releaseClaim()
+      return NextResponse.json(
+        { error: intentJson.errors?.[0]?.detail ?? 'Failed to create payment intent' },
+        { status: 502 }
+      )
+    }
+
+    const intentId: string | undefined = intentJson.data?.id
+    const clientKey: string | undefined = intentJson.data?.attributes?.client_key
+    if (!intentId || !clientKey) {
+      await releaseClaim()
+      return NextResponse.json({ error: 'PayMongo returned an incomplete payment intent' }, { status: 502 })
+    }
+
+    const methodRes = await fetch(`${PM_BASE}/payment_methods`, {
+      method: 'POST',
+      headers: paymongoPublicHeaders(publicKey),
+      body: JSON.stringify({
+        data: { attributes: { type: 'qrph', expiry_seconds: 1800 } },
+      }),
+    })
+    const methodJson = await methodRes.json().catch(() => ({}))
+    if (!methodRes.ok || !methodJson.data?.id) {
+      await releaseClaim()
+      return NextResponse.json(
+        { error: methodJson.errors?.[0]?.detail ?? 'Failed to create QR Ph payment method' },
+        { status: 502 }
+      )
+    }
+
+    const attachRes = await fetch(`${PM_BASE}/payment_intents/${intentId}/attach`, {
+      method: 'POST',
+      headers: paymongoPublicHeaders(publicKey),
+      body: JSON.stringify({
+        data: {
+          attributes: {
+            payment_method: methodJson.data.id,
+            client_key: clientKey,
+          },
+        },
+      }),
+    })
+    const attachJson = await attachRes.json().catch(() => ({}))
+    const qrUrl: string | undefined = attachJson.data?.attributes?.next_action?.code?.image_url
+    if (!attachRes.ok || !qrUrl) {
+      await releaseClaim()
+      return NextResponse.json(
+        { error: attachJson.errors?.[0]?.detail ?? 'PayMongo did not return a QR code' },
+        { status: 502 }
+      )
+    }
+
+    const { error: updateError } = await admin
+      .from('orders')
+      .update({ payment_status: 'pending', paymongo_intent_id: intentId, payment_session_token: null })
+      .eq('id', order_id)
+      .eq('payment_session_token', attemptId)
+
+    if (updateError) {
+      console.error('[PayMongo] failed to save payment intent:', updateError.message)
+      await releaseClaim()
+      return NextResponse.json({ error: 'Failed to save payment session' }, { status: 500 })
+    }
+
+    return NextResponse.json({ qr_url: qrUrl, payment_intent_id: intentId })
   } catch {
-    await admin.from('orders').update({ payment_session_started_at: null, payment_session_token: null }).eq('id', order.id).eq('payment_session_token', attemptId)
+    await releaseClaim()
     return NextResponse.json({ error: 'Payment provider is temporarily unavailable' }, { status: 502 })
   }
-
-  if (!sourceRes.ok) {
-    await admin.from('orders').update({ payment_session_started_at: null, payment_session_token: null }).eq('id', order.id).eq('payment_session_token', attemptId)
-    return NextResponse.json(
-      { error: sourceJson.errors?.[0]?.detail ?? 'Failed to create QR code' },
-      { status: 502 }
-    )
-  }
-
-  const sourceId: string = sourceJson.data.id
-  const qrUrl: string | null =
-    sourceJson.data.attributes?.qr_image ??
-    sourceJson.data.attributes?.redirect?.checkout_url ??
-    null
-
-  if (!sourceId || !qrUrl) {
-    await admin.from('orders').update({ payment_session_started_at: null, payment_session_token: null }).eq('id', order.id).eq('payment_session_token', attemptId)
-    return NextResponse.json({ error: 'Payment provider returned an incomplete session' }, { status: 502 })
-  }
-
-  // Save the source ID for webhook matching
-  const { error: updateError } = await admin
-    .from('orders')
-    .update({ payment_status: 'pending', paymongo_intent_id: sourceId, payment_session_token: null })
-    .eq('id', order_id)
-    .eq('payment_session_token', attemptId)
-
-  if (updateError) {
-    console.error('[PayMongo] failed to save source ID:', updateError.message)
-    return NextResponse.json({ error: 'Failed to save payment session' }, { status: 500 })
-  }
-
-  return NextResponse.json({ qr_url: qrUrl, payment_url: qrUrl })
 }

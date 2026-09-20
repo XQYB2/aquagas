@@ -47,6 +47,7 @@ export default function OrderDetailPage() {
   const [cancelling, setCancelling] = useState(false)
   const [retryingPayment, setRetryingPayment] = useState(false)
   const [retryError, setRetryError] = useState('')
+  const [retryQrUrl, setRetryQrUrl] = useState<string | null>(null)
 
   const [review, setReview] = useState<Review | null>(null)
   const [reviewRating, setReviewRating] = useState(0)
@@ -158,12 +159,13 @@ export default function OrderDetailPage() {
     const res = await fetch('/api/payment/create', { method: 'POST', headers, body: JSON.stringify({ order_id: order.id }) })
     let data: any = {}
     try { data = await res.json() } catch { /* empty body */ }
-    if (!res.ok || !data.payment_url) {
+    if (!res.ok || !data.qr_url) {
       setRetryError(data.error || 'Could not start payment. Please try again.')
       setRetryingPayment(false)
       return
     }
-    window.location.href = data.payment_url
+    setRetryQrUrl(data.qr_url)
+    setRetryingPayment(false)
   }
 
   async function handleCancel() {
@@ -230,7 +232,7 @@ export default function OrderDetailPage() {
           </div>
         )}
 
-        {/* Awaiting GCash Payment banner */}
+        {/* Awaiting QR Ph payment banner */}
         {order.status === 'pending_payment' && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5">
             <div className="flex items-start gap-3 mb-4">
@@ -238,8 +240,8 @@ export default function OrderDetailPage() {
                 <AlertCircle className="w-4 h-4 text-yellow-600" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-yellow-800">Awaiting GCash Payment</p>
-                <p className="text-xs text-yellow-600 mt-0.5">Your payment session may have expired. Tap below to get a fresh payment link.</p>
+                <p className="text-sm font-semibold text-yellow-800">Awaiting QR Ph Payment</p>
+                <p className="text-xs text-yellow-600 mt-0.5">Your QR code may have expired. Tap below to generate a fresh code.</p>
               </div>
             </div>
             {retryError && (
@@ -260,10 +262,17 @@ export default function OrderDetailPage() {
                 </>
               ) : (
                 <>
-                  <div className="w-4 h-4 bg-white/20 rounded flex items-center justify-center font-bold text-xs">G</div>
-                  Complete Payment via GCash
+                  <div className="w-4 h-4 bg-white/20 rounded flex items-center justify-center font-bold text-xs">QR</div>
+                  Generate QR Ph code
                 </>
               )}
+            </button>
+            <button
+              onClick={handleCancel}
+              disabled={cancelling}
+              className="mt-2 w-full rounded-xl border border-red-200 py-3 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
+            >
+              {cancelling ? 'Cancelling…' : 'Cancel unpaid order'}
             </button>
           </div>
         )}
@@ -369,10 +378,10 @@ export default function OrderDetailPage() {
         {/* Payment */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <div className="flex items-center gap-2">
-            {order.payment_method === 'gcash' ? (
+            {order.payment_method === 'qrph' ? (
               <>
                 <div className="w-5 h-5 bg-blue-100 rounded flex items-center justify-center text-blue-600 font-bold text-xs">G</div>
-                <span className="text-sm font-semibold text-gray-900">GCash</span>
+                <span className="text-sm font-semibold text-gray-900">QR Ph</span>
               </>
             ) : (
               <>
@@ -385,9 +394,9 @@ export default function OrderDetailPage() {
 
         {/* Cancel Button */}
         {(() => {
-          const isGcash = order.payment_method === 'gcash'
+          const isQrPh = order.payment_method === 'qrph'
           const COD_CANCELLABLE: Order['status'][] = ['placed', 'confirmed', 'awaiting_pickup']
-          const canCancel = isGcash
+          const canCancel = isQrPh
             ? order.payment_status === 'unpaid'
             : COD_CANCELLABLE.includes(order.status)
 
@@ -396,8 +405,8 @@ export default function OrderDetailPage() {
           if (!canCancel) {
             return (
               <div className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-500 text-center">
-                {isGcash
-                  ? '🔒 GCash payment confirmed — this order can no longer be cancelled. Contact the store if you have concerns.'
+                {isQrPh
+                  ? '🔒 QR Ph payment confirmed — this order can no longer be cancelled. Contact the store if you have concerns.'
                   : '🔒 Cannot cancel after gallons have been picked up.'}
               </div>
             )
@@ -492,6 +501,18 @@ export default function OrderDetailPage() {
           />
         )}
       </div>
+      {retryQrUrl && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="retry-qr-title">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
+            <h2 id="retry-qr-title" className="text-lg font-bold text-gray-900">Scan to pay with QR Ph</h2>
+            <p className="mt-1 text-sm text-gray-500">Use any QR Ph-compatible banking or e-wallet app.</p>
+            <img src={retryQrUrl} alt="QR Ph payment code" className="mx-auto my-5 h-56 w-56 rounded-xl border border-gray-100" />
+            <button onClick={() => setRetryQrUrl(null)} className="min-h-11 w-full rounded-xl bg-water-500 px-4 py-3 text-sm font-semibold text-white hover:bg-water-600">
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
