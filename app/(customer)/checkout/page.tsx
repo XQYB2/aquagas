@@ -30,6 +30,8 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'qrph'>('cod')
   const [qrUrl, setQrUrl] = useState<string | null>(null)
   const [qrModalOpen, setQrModalOpen] = useState(false)
+  const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null)
+  const [paymentCheck, setPaymentCheck] = useState<'waiting' | 'checking' | 'paid' | 'error'>('waiting')
   const [deliveryType, setDeliveryType] = useState<'standard' | 'batch'>('standard')
   const [batchSlots, setBatchSlots] = useState<{ id: string; day_of_week: number; time_hhmm: string; max_orders: number; cutoff_minutes: number }[]>([])
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
@@ -119,6 +121,38 @@ export default function CheckoutPage() {
     { value: 'Other',           icon: MoreHorizontal, color: 'text-gray-400',  bg: 'bg-gray-50'  },
   ]
 
+  async function verifyQrPayment(orderId: string, showChecking = false) {
+    if (showChecking) setPaymentCheck('checking')
+    try {
+      const headers = await authenticatedJsonHeaders()
+      const response = await fetch('/api/payment/status', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ order_id: orderId }),
+        cache: 'no-store',
+      })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(result.error || 'Unable to verify payment.')
+
+      if (result.paid) {
+        setPaymentCheck('paid')
+        dispatch({ type: 'CLEAR_CART' })
+        window.setTimeout(() => router.replace(`/orders/${orderId}`), 1800)
+      } else {
+        setPaymentCheck('waiting')
+      }
+    } catch {
+      if (showChecking) setPaymentCheck('error')
+    }
+  }
+
+  useEffect(() => {
+    if (!qrModalOpen || !paymentOrderId || paymentCheck === 'paid') return
+    void verifyQrPayment(paymentOrderId)
+    const interval = window.setInterval(() => void verifyQrPayment(paymentOrderId), 4000)
+    return () => window.clearInterval(interval)
+  }, [qrModalOpen, paymentOrderId, paymentCheck])
+
   async function handleSaveLocation(label: string) {
     if (!user || !address.trim() || !deliveryLat || !deliveryLng) return
     setSavingLocation(true)
@@ -189,6 +223,8 @@ export default function CheckoutPage() {
         return
       }
       setQrUrl(json.qr_url)
+      setPaymentOrderId(orderId)
+      setPaymentCheck('waiting')
       setQrModalOpen(true)
       setLoading(false)
       return
@@ -660,11 +696,17 @@ export default function CheckoutPage() {
       {qrModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center gap-5">
-            <h2 className="text-xl font-bold text-gray-900">Scan to Pay</h2>
+            <h2 className="text-xl font-bold text-gray-900">
+              {paymentCheck === 'paid' ? 'Payment received' : 'Scan to Pay'}
+            </h2>
             <p className="text-sm text-gray-500 text-center">
               Open your banking app (BDO, BPI, GCash, Maya, UnionBank…) and scan this QR code to pay via InstaPay.
             </p>
-            {qrUrl ? (
+            {paymentCheck === 'paid' ? (
+              <div className="flex h-56 w-56 items-center justify-center rounded-2xl bg-green-50" role="status" aria-live="polite">
+                <CheckCircle className="h-20 w-20 text-green-500" aria-hidden="true" />
+              </div>
+            ) : qrUrl ? (
               <img src={qrUrl} alt="QR Ph payment code" className="w-56 h-56 rounded-xl border border-gray-100" />
             ) : (
               <div className="w-56 h-56 flex items-center justify-center">
@@ -674,20 +716,23 @@ export default function CheckoutPage() {
                 </svg>
               </div>
             )}
-            <p className="text-xs text-gray-400 text-center">
-              Your order is saved. Once payment is confirmed, the store will prepare your delivery.
+            <p className={`text-sm text-center ${paymentCheck === 'paid' ? 'font-semibold text-green-700' : 'text-gray-500'}`} aria-live="polite">
+              {paymentCheck === 'paid'
+                ? 'Your payment is confirmed. Redirecting to your order…'
+                : paymentCheck === 'checking'
+                  ? 'Checking your payment securely…'
+                  : paymentCheck === 'error'
+                    ? 'We could not verify it yet. Your order is safe—try checking again.'
+                    : 'Waiting for PayMongo to confirm your payment automatically.'}
             </p>
-            <button
-              onClick={() => {
-                dispatch({ type: 'CLEAR_CART' })
-                setQrModalOpen(false)
-                router.push('/orders')
-              }}
-              className="w-full py-3.5 rounded-2xl bg-water-500 hover:bg-water-600 text-white font-bold transition-colors"
+            {paymentCheck !== 'paid' && <button
+              onClick={() => paymentOrderId && verifyQrPayment(paymentOrderId, true)}
+              disabled={paymentCheck === 'checking'}
+              className="w-full py-3.5 rounded-2xl bg-water-500 hover:bg-water-600 disabled:opacity-60 text-white font-bold transition-colors"
             >
-              I've Paid — Go to Orders
-            </button>
-            <button
+              {paymentCheck === 'checking' ? 'Checking payment…' : "I've Paid — Check Payment"}
+            </button>}
+            {paymentCheck !== 'paid' && <button
               onClick={() => {
                 dispatch({ type: 'CLEAR_CART' })
                 setQrModalOpen(false)
@@ -696,7 +741,7 @@ export default function CheckoutPage() {
               className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
             >
               Pay later from Orders
-            </button>
+            </button>}
           </div>
         </div>
       )}

@@ -126,6 +126,37 @@ export default function OrderDetailPage() {
     return () => { supabase.removeChannel(channel) }
   }, [id])
 
+  useEffect(() => {
+    if (!order || order.status !== 'pending_payment' || !user) return
+    let active = true
+
+    async function verifyPayment() {
+      try {
+        const headers = await authenticatedJsonHeaders()
+        const response = await fetch('/api/payment/status', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ order_id: order!.id }),
+          cache: 'no-store',
+        })
+        const result = await response.json().catch(() => ({}))
+        if (active && response.ok && result.paid) {
+          setRetryQrUrl(null)
+          setOrder(previous => previous ? { ...previous, status: 'placed', payment_status: 'paid' } : null)
+        }
+      } catch {
+        // The realtime webhook remains the primary confirmation path.
+      }
+    }
+
+    void verifyPayment()
+    const interval = window.setInterval(verifyPayment, 4000)
+    return () => {
+      active = false
+      window.clearInterval(interval)
+    }
+  }, [order?.id, order?.status, user])
+
   async function handleSubmitReview() {
     if (!order || !user || reviewRating === 0) return
     setSubmittingReview(true)
