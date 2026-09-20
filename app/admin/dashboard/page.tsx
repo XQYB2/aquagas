@@ -64,19 +64,19 @@ export default function AdminDashboardPage() {
 
       {/* Pending alert */}
       {stats.pendingProviders > 0 && (
-        <div className="mb-5 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
+        <div className="mb-5 flex flex-wrap items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 sm:flex-nowrap">
           <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
-          <p className="text-sm text-amber-800 font-medium">
+          <p className="min-w-0 flex-1 text-sm text-amber-800 font-medium">
             <strong>{stats.pendingProviders}</strong> provider application{stats.pendingProviders > 1 ? 's' : ''} awaiting your approval.
           </p>
-          <Link href="/admin/providers?tab=pending" className="ml-auto text-sm font-semibold text-amber-700 hover:text-amber-900 flex items-center gap-1 shrink-0">
+          <Link href="/admin/providers?tab=pending" className="ml-8 flex min-h-11 shrink-0 items-center gap-1 text-sm font-semibold text-amber-700 hover:text-amber-900 sm:ml-auto">
             Review <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       )}
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <StatCard label="Orders Today"        value={stats.totalOrdersToday}      icon={<ShoppingBag className="w-5 h-5 text-indigo-600" />} accent="bg-indigo-50" sub="Across all providers" />
         <StatCard label="Revenue Today"       value={`₱${stats.totalRevenueToday.toLocaleString()}`} icon={<Banknote className="w-5 h-5 text-green-600" />} accent="bg-green-50" sub="Cash on Delivery" />
         <StatCard label="Active Providers"    value={stats.activeProviders}        icon={<Store className="w-5 h-5 text-water-600" />} accent="bg-water-50" sub={`${stats.pendingProviders} pending`} subColor={stats.pendingProviders > 0 ? 'text-amber-600' : 'text-gray-400'} />
@@ -88,15 +88,15 @@ export default function AdminDashboardPage() {
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         {/* Revenue bar chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-5">
-          <div className="flex items-center justify-between mb-4">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-4 sm:p-5">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="font-semibold text-gray-900 text-sm">Daily Revenue — Last 14 Days</h2>
               <p className="text-xl font-bold text-gray-900 mt-0.5">
                 ₱{last14.reduce((s, d) => s + d.revenue, 0).toLocaleString()}
               </p>
             </div>
-            <span className="text-xs text-indigo-600 font-semibold bg-indigo-50 px-2.5 py-1 rounded-full">Platform-wide</span>
+            <span className="self-start text-xs text-indigo-600 font-semibold bg-indigo-50 px-2.5 py-1 rounded-full">Platform-wide</span>
           </div>
           <BarChart data={last14} valueKey="revenue" labelKey="day" color="#6366f1" height={130} />
         </div>

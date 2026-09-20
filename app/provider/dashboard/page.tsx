@@ -64,8 +64,8 @@ export default function DashboardPage() {
   return (
     <div>
       {/* Page header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-sm text-gray-400 mt-0.5">
             {new Date().toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
@@ -75,7 +75,7 @@ export default function DashboardPage() {
         {/* Open/Close toggle */}
         <button
           onClick={() => updateStore({ is_open: !store?.is_open })}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm transition-all ${
+          className={`flex min-h-11 shrink-0 self-start items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm transition-all ${
             store?.is_open
               ? 'bg-green-50 text-green-700 hover:bg-green-100'
               : 'bg-red-50 text-red-600 hover:bg-red-100'
@@ -89,7 +89,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
           label="Today's Orders"
           value={stats.todayOrders}
@@ -126,18 +126,18 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         {/* Revenue chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-5 overflow-visible">
-          <div className="flex items-center justify-between mb-5">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 overflow-visible">
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="font-semibold text-gray-900 text-sm">Revenue — Last {chartDays} Days</h2>
               <p className="text-2xl font-bold text-gray-900 mt-0.5">₱{stats.weekRevenue.toLocaleString()}</p>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               {([7, 30] as const).map(d => (
                 <button
                   key={d}
                   onClick={() => setChartDays(d)}
-                  className={`text-xs font-semibold px-2.5 py-1 rounded-full transition-colors ${chartDays === d ? 'bg-water-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                  className={`min-h-11 min-w-11 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors ${chartDays === d ? 'bg-water-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
                 >
                   {d}d
                 </button>
@@ -150,13 +150,13 @@ export default function DashboardPage() {
           </div>
 
           {/* Chart */}
-          <div className={chartDays === 30 ? 'overflow-x-auto' : ''}>
+          <div className="overflow-x-auto pb-1">
             <div
               className="flex items-end overflow-visible"
               style={{
                 height: 96,
                 gap: 3,
-                minWidth: chartDays === 30 ? `${30 * 16}px` : undefined,
+                minWidth: chartDays === 30 ? `${30 * 16}px` : '320px',
               }}
             >
               {revenueData.map((d, i) => {
@@ -189,7 +189,7 @@ export default function DashboardPage() {
               className="flex mt-1.5"
               style={{
                 gap: 3,
-                minWidth: chartDays === 30 ? `${30 * 16}px` : undefined,
+                minWidth: chartDays === 30 ? `${30 * 16}px` : '320px',
               }}
             >
               {revenueData.map((d, i) => (
@@ -251,19 +251,19 @@ export default function DashboardPage() {
           <div className="space-y-2">
             {activeOrders.slice(0, 5).map(order => (
               <Link key={order.id} href={`/provider/orders/${order.id}`}>
-                <div className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors group">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-col gap-3 rounded-xl p-3 transition-colors hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between group">
+                  <div className="flex min-w-0 items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500">
                       #{order.id.slice(-3).toUpperCase()}
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-900 text-sm">{order.customer_name}</p>
-                      <p className="text-xs text-gray-400">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-gray-900 text-sm">{order.customer_name}</p>
+                      <p className="truncate text-xs text-gray-400">
                         {order.items.map(i => `${i.product_name} ×${i.quantity}`).join(', ')}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between gap-3 sm:justify-end">
                     <OrderStatusBadge status={order.status} />
                     <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
                   </div>
@@ -314,11 +314,11 @@ function StatCard({ label, value, icon, bg, sub, subColor }: {
   bg: string; sub: string; subColor: string
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-4">
+    <div className="min-w-0 bg-white rounded-2xl border border-gray-100 p-4">
       <div className={`w-9 h-9 ${bg} rounded-xl flex items-center justify-center mb-3`}>
         {icon}
       </div>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
+      <p className="break-words text-xl font-bold text-gray-900 sm:text-2xl">{value}</p>
       <p className="text-xs text-gray-500 font-medium mt-0.5">{label}</p>
       <p className={`text-xs font-semibold mt-1 ${subColor}`}>{sub}</p>
     </div>

@@ -77,7 +77,8 @@ export default function StorePage() {
         .map(({ product_id, quantity }) => {
           const product = products.find(p => p.id === product_id)
           if (!product || !product.is_available) return null
-          return { id: product.id, product_id: product.id, name: product.name, price: product.price, quantity, unit: product.unit, category: product.category as 'water' | 'lpg' }
+          if (product.stock_quantity < 1) return null
+          return { id: product.id, product_id: product.id, name: product.name, price: product.price, quantity: Math.min(quantity, product.stock_quantity), max_quantity: product.stock_quantity, unit: product.unit, category: product.category as 'water' | 'lpg' }
         })
         .filter(Boolean) as any[]
       if (cartItems.length > 0) {
@@ -127,6 +128,7 @@ export default function StorePage() {
           name: product.name,
           price: product.price,
           quantity: 1,
+          max_quantity: product.stock_quantity,
           unit: product.unit,
           category: product.category,
           provider_id: provider!.id,
@@ -354,7 +356,7 @@ function RatingBreakdown({ reviews }: { reviews: Review[] }) {
 function ProductRow({
   product, qty, onAdd, onDecrease
 }: {
-  product: { id: string; name: string; description: string | null; price: number; unit: string; is_available: boolean; image_url: string | null; category: 'water' | 'lpg' }
+  product: { id: string; name: string; description: string | null; price: number; unit: string; is_available: boolean; stock_quantity: number; image_url: string | null; category: 'water' | 'lpg' }
   qty: number
   onAdd: () => void
   onDecrease: () => void
@@ -364,7 +366,7 @@ function ProductRow({
   const fallbackEmoji = product.category === 'water' ? '💧' : '🔥'
 
   return (
-    <div className={`flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-3 ${!product.is_available ? 'opacity-50' : ''}`}>
+    <div className={`flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-3 ${!product.is_available || product.stock_quantity === 0 ? 'opacity-50' : ''}`}>
       {/* Product image */}
       <div className={`w-16 h-16 rounded-xl overflow-hidden shrink-0 ${fallbackBg} flex items-center justify-center`}>
         {product.image_url ? (
@@ -380,10 +382,13 @@ function ProductRow({
           <p className="text-gray-400 text-xs mt-0.5 line-clamp-2">{product.description}</p>
         )}
         <p className={`font-bold text-sm mt-1 ${accent}`}>₱{product.price} <span className="text-gray-400 font-normal text-xs">/ {product.unit}</span></p>
+        <p className={`text-xs mt-1 font-medium ${product.stock_quantity <= 5 ? 'text-amber-600' : 'text-gray-400'}`}>
+          {product.stock_quantity === 0 ? 'Out of stock' : `${product.stock_quantity} available`}
+        </p>
       </div>
 
       <div className="shrink-0">
-        {!product.is_available ? (
+        {!product.is_available || product.stock_quantity === 0 ? (
           <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-lg font-medium">Unavailable</span>
         ) : qty === 0 ? (
           <button
@@ -398,7 +403,7 @@ function ProductRow({
               <Minus className="w-3.5 h-3.5 text-gray-600" />
             </button>
             <span className="w-6 text-center font-bold text-gray-900">{qty}</span>
-            <button onClick={onAdd} className="w-8 h-8 rounded-lg bg-water-500 text-white flex items-center justify-center hover:bg-water-600 transition-colors">
+            <button onClick={onAdd} disabled={qty >= product.stock_quantity} className="w-8 h-8 rounded-lg bg-water-500 disabled:bg-gray-200 text-white flex items-center justify-center hover:bg-water-600 transition-colors">
               <Plus className="w-3.5 h-3.5" />
             </button>
           </div>

@@ -11,6 +11,32 @@ export const metadata: Metadata = {
 
 const RELEASES = [
   {
+    version: 'Next',
+    date: 'September 20, 2026',
+    label: 'In development',
+    labelColor: 'bg-amber-100 text-amber-800',
+    changes: [
+      {
+        type: 'new',
+        items: [
+          'Secure PayMongo QR Ph checkout with signed webhook confirmation',
+          'Inventory-aware ordering with atomic stock reservation and automatic restoration',
+          'Provider stock quantity management with customer-facing availability',
+          '30-minute customer inactivity timeout',
+        ],
+      },
+      {
+        type: 'improved',
+        items: [
+          'Customer, provider, and admin dashboards now adapt cleanly across phones, tablets, and desktop screens',
+          'Mobile navigation and dashboard controls now provide larger touch targets',
+          'Payment sessions are protected against duplicate requests, excessive retries, stale webhooks, and replay attempts',
+          'PayMongo configuration is centralized in secure server environment variables',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.5.1',
     date: 'August 11, 2025',
     label: 'Latest',
@@ -151,7 +177,7 @@ const RELEASES = [
       {
         type: 'new',
         items: [
-          'GCash payments via Konfirma payment gateway',
+          'QR Ph payments via PayMongo',
           'Saved delivery locations for customers',
           'Product photos for provider listings',
           'Provider AI assistant (separate Gemini API key)',
@@ -230,7 +256,7 @@ export default function ChangelogPage() {
               {/* Release header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
                 <div className="flex items-center gap-3">
-                  <span className="text-lg font-bold text-gray-900">v{release.version}</span>
+                  <span className="text-lg font-bold text-gray-900">{release.version === 'Next' ? 'Next' : `v${release.version}`}</span>
                   <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${release.labelColor}`}>
                     {release.label}
                   </span>
@@ -265,7 +291,7 @@ export default function ChangelogPage() {
         </div>
 
           <p className="mt-10 text-center text-xs text-gray-400">
-            AquaGas v1.5.1 · <a href="mailto:aquagas.business@gmail.com" className="hover:text-gray-600">aquagas.business@gmail.com</a>
+            AquaGas · <a href="mailto:aquagas.business@gmail.com" className="hover:text-gray-600">aquagas.business@gmail.com</a>
           </p>
         </div>
       </main>

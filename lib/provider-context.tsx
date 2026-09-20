@@ -43,6 +43,7 @@ export type ProviderProduct = {
   category: 'water' | 'lpg'
   image_url: string | null
   is_available: boolean
+  stock_quantity: number
 }
 
 export type ProviderStore = {
@@ -59,10 +60,6 @@ export type ProviderStore = {
   logo_url: string | null
   phone: string
   description: string
-  konfirma_pk: string | null
-  konfirma_sk: string | null
-  konfirma_wallet_id: string | null
-  konfirma_webhook_secret: string | null
   auto_schedule: boolean
   open_time: string | null
   close_time: string | null
@@ -155,10 +152,6 @@ export function ProviderAuthProvider({ children }: { children: React.ReactNode }
       logo_url: providerRow.logo_url,
       phone: '',
       description: '',
-      konfirma_pk: providerRow.konfirma_pk ?? null,
-      konfirma_sk: providerRow.konfirma_sk ?? null,
-      konfirma_wallet_id: providerRow.konfirma_wallet_id ?? null,
-      konfirma_webhook_secret: providerRow.konfirma_webhook_secret ?? null,
       auto_schedule: providerRow.auto_schedule ?? false,
       open_time: providerRow.open_time ?? null,
       close_time: providerRow.close_time ?? null,
@@ -175,6 +168,7 @@ export function ProviderAuthProvider({ children }: { children: React.ReactNode }
       category: p.category,
       image_url: p.image_url,
       is_available: p.is_available,
+      stock_quantity: p.stock_quantity,
     }))
 
     const orders = await loadOrders(providerRow.id)
@@ -280,6 +274,7 @@ export function ProviderAuthProvider({ children }: { children: React.ReactNode }
         category: data.category,
         image_url: data.image_url,
         is_available: data.is_available,
+        stock_quantity: data.stock_quantity,
       }
       setState(s => ({ ...s, products: [newProduct, ...s.products] }))
     }

@@ -13,11 +13,12 @@ type ProductForm = {
   unit: string
   category: 'water' | 'lpg'
   is_available: boolean
+  stock_quantity: string
   image_url: string | null
 }
 
 const EMPTY_FORM: ProductForm = {
-  name: '', description: '', price: '', unit: 'gallon', category: 'water', is_available: true, image_url: null,
+  name: '', description: '', price: '', unit: 'gallon', category: 'water', is_available: true, stock_quantity: '0', image_url: null,
 }
 
 export default function ProductsPage() {
@@ -57,6 +58,7 @@ export default function ProductsPage() {
       unit: product.unit,
       category: product.category,
       is_available: product.is_available,
+      stock_quantity: product.stock_quantity.toString(),
       image_url: product.image_url ?? null,
     })
     setEditingId(product.id)
@@ -76,7 +78,7 @@ export default function ProductsPage() {
   }
 
   async function handleSave() {
-    if (!form.name.trim() || !form.price) return
+    if (!form.name.trim() || !form.price || form.stock_quantity === '' || Number(form.stock_quantity) < 0) return
     setSaving(true)
     const payload = {
       name: form.name.trim(),
@@ -86,6 +88,7 @@ export default function ProductsPage() {
       category: form.category,
       image_url: form.image_url,
       is_available: form.is_available,
+      stock_quantity: Math.floor(Number(form.stock_quantity)),
     }
     if (editingId) {
       updateProduct(editingId, payload)
@@ -235,6 +238,12 @@ export default function ProductsPage() {
               </div>
 
               <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Stock Quantity *</label>
+                <input type="number" value={form.stock_quantity} onChange={e => setForm(f => ({ ...f, stock_quantity: e.target.value }))} min="0" step="1" inputMode="numeric" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-water-300" />
+                <p className="text-xs text-gray-400 mt-1">Customers cannot order more than this quantity.</p>
+              </div>
+
+              <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Category</label>
                 <div className="flex gap-2">
                   {(['water', 'lpg'] as const).map(cat => (
@@ -275,7 +284,7 @@ export default function ProductsPage() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={!form.name.trim() || !form.price || saving}
+                disabled={!form.name.trim() || !form.price || form.stock_quantity === '' || Number(form.stock_quantity) < 0 || saving}
                 className="flex-1 py-3 rounded-xl bg-water-500 hover:bg-water-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-sm transition-colors"
               >
                 {saving ? 'Saving…' : editingId ? 'Save Changes' : 'Add Product'}
@@ -325,6 +334,9 @@ function ProductRow({ product, onEdit, onDelete, onToggle }: {
         <p className="text-xs text-gray-400 truncate">{product.description || 'No description'}</p>
         <p className={`text-sm font-bold mt-0.5 ${product.category === 'water' ? 'text-water-600' : 'text-lpg-600'}`}>
           ₱{product.price} <span className="text-gray-400 font-normal text-xs">/ {product.unit}</span>
+        </p>
+        <p className={`text-xs font-semibold mt-1 ${product.stock_quantity === 0 ? 'text-red-500' : product.stock_quantity <= 5 ? 'text-amber-600' : 'text-green-600'}`}>
+          {product.stock_quantity === 0 ? 'Out of stock' : `${product.stock_quantity} in stock`}
         </p>
       </div>
 

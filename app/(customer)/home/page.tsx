@@ -175,7 +175,7 @@ export default function HomePage() {
                 <button
                   onClick={handleLocate}
                   disabled={locating}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-water-500 hover:bg-water-600 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
+                  className="flex min-h-11 items-center gap-1.5 px-4 py-2 bg-water-500 hover:bg-water-600 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
                 >
                   <LocateFixed className="w-4 h-4" />
                   {locating ? 'Locating…' : 'Use my location'}
@@ -183,7 +183,7 @@ export default function HomePage() {
                 {user && (
                   <Link
                     href="/profile"
-                    className="flex items-center gap-1.5 px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
+                    className="flex min-h-11 items-center gap-1.5 px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
                   >
                     Use saved address
                     <ChevronRight className="w-3.5 h-3.5" />
@@ -211,7 +211,7 @@ export default function HomePage() {
         )}
 
         {/* Category Filters */}
-        <div className="flex gap-3 mb-8">
+        <div className="flex flex-wrap gap-2 sm:gap-3 mb-8">
           {[
             { key: 'all' as FilterType, label: 'All' },
             { key: 'water' as FilterType, label: '💧 Water Refill' },
@@ -220,7 +220,7 @@ export default function HomePage() {
             <button
               key={tab.key}
               onClick={() => setFilter(tab.key)}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              className={`min-h-11 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                 filter === tab.key
                   ? tab.key === 'water'
                     ? 'bg-water-500 text-white shadow-md shadow-water-200'

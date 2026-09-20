@@ -93,7 +93,7 @@ export function AdminSidebar() {
           </div>
           <span className="font-bold text-sm text-white">Admin Panel</span>
         </div>
-        <button onClick={() => setOpen(o => !o)} className="p-2 text-gray-400 hover:text-white">
+        <button onClick={() => setOpen(o => !o)} className="flex min-h-11 min-w-11 items-center justify-center text-gray-400 hover:text-white" aria-label={open ? 'Close admin navigation' : 'Open admin navigation'} aria-expanded={open}>
           {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>

@@ -50,13 +50,13 @@ export function Navbar() {
           <button
             onClick={cycleTheme}
             title={`Theme: ${themeLabel}`}
-            className="p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-1.5"
+            className="min-h-11 min-w-11 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-1.5"
           >
             <ThemeIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             <span className="hidden md:block text-xs text-gray-400 dark:text-gray-500 font-medium">{themeLabel}</span>
           </button>
 
-          <Link href="/checkout" className="relative p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+          <Link href="/checkout" className="relative flex min-h-11 min-w-11 items-center justify-center rounded-xl p-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <ShoppingCart className="w-5 h-5 text-gray-700 dark:text-gray-300" />
             {totalItems > 0 && (
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-water-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
@@ -64,10 +64,10 @@ export function Navbar() {
               </span>
             )}
           </Link>
-          <Link href={user ? '/profile' : '/login'} className="hidden md:block p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+          <Link href={user ? '/profile' : '/login'} className="hidden min-h-11 min-w-11 items-center justify-center rounded-xl p-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors md:flex">
             <User className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </Link>
-          <button onClick={() => setMenuOpen(o => !o)} className="md:hidden p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+          <button onClick={() => setMenuOpen(o => !o)} className="flex min-h-11 min-w-11 items-center justify-center rounded-xl p-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors md:hidden" aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={menuOpen}>
             {menuOpen ? <X className="w-5 h-5 text-gray-700 dark:text-gray-300" /> : <Menu className="w-5 h-5 text-gray-700 dark:text-gray-300" />}
           </button>
         </div>

@@ -8,6 +8,7 @@ export interface CartItem {
   name: string
   price: number
   quantity: number
+  max_quantity: number
   unit: string
   category: 'water' | 'lpg'
 }
@@ -49,7 +50,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
           provider_name,
           delivery_fee,
           items: state.items.map(i =>
-            i.product_id === item.product_id ? { ...i, quantity: i.quantity + 1 } : i
+            i.product_id === item.product_id ? { ...i, quantity: Math.min(i.quantity + 1, item.max_quantity ?? Number.MAX_SAFE_INTEGER) } : i
           ),
         }
       }
@@ -67,7 +68,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       return {
         ...state,
         items: state.items
-          .map(i => i.id === action.payload.id ? { ...i, quantity: action.payload.quantity } : i)
+          .map(i => i.id === action.payload.id ? { ...i, quantity: Math.min(action.payload.quantity, i.max_quantity ?? Number.MAX_SAFE_INTEGER) } : i)
           .filter(i => i.quantity > 0),
       }
     case 'CLEAR_CART':

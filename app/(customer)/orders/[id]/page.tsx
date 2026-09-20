@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { authenticatedJsonHeaders } from '@/lib/authenticated-fetch'
 import { useAuth } from '@/lib/auth-context'
 import { StatusStepper, StatusBadge } from '@/components/customer/StatusBadge'
 import { MapPin, Phone, Banknote, AlertCircle, Star, CalendarClock, Truck, Camera } from 'lucide-react'
@@ -148,11 +149,13 @@ export default function OrderDetailPage() {
     if (!order) return
     setRetryingPayment(true)
     setRetryError('')
-    const res = await fetch('/api/payment/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ order_id: order.id }),
-    })
+    let headers: Record<string, string>
+    try { headers = await authenticatedJsonHeaders() } catch (authError: any) {
+      setRetryError(authError.message)
+      setRetryingPayment(false)
+      return
+    }
+    const res = await fetch('/api/payment/create', { method: 'POST', headers, body: JSON.stringify({ order_id: order.id }) })
     let data: any = {}
     try { data = await res.json() } catch { /* empty body */ }
     if (!res.ok || !data.payment_url) {

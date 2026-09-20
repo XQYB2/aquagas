@@ -62,11 +62,11 @@ export function StatCard({
   sub?: string; subColor?: string; accent?: string
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5">
+    <div className="min-w-0 bg-white rounded-2xl border border-gray-100 p-4 sm:p-5">
       <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center mb-3', accent)}>
         {icon}
       </div>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
+      <p className="break-words text-xl font-bold text-gray-900 sm:text-2xl">{value}</p>
       <p className="text-xs text-gray-500 font-medium mt-0.5">{label}</p>
       {sub && <p className={cn('text-xs font-semibold mt-1', subColor)}>{sub}</p>}
     </div>

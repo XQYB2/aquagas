@@ -5,6 +5,7 @@ import { useCart } from '@/lib/cart-context'
 import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { authenticatedJsonHeaders } from '@/lib/authenticated-fetch'
 import { ArrowRight, MapPin, Truck, Banknote, CheckCircle, BookmarkPlus, Bookmark, Home, Briefcase, Heart, MoreHorizontal, Plus, Minus, Trash2, CalendarClock } from 'lucide-react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
@@ -147,59 +148,42 @@ export default function CheckoutPage() {
     const isBatch = deliveryType === 'batch' && selectedSlotId
     const batchSlot = isBatch ? batchSlots.find(s => s.id === selectedSlotId) : null
     const scheduledAt = batchSlot ? nextOccurrence(batchSlot.day_of_week, batchSlot.time_hhmm).toISOString() : null
-    const orderTotal = isBatch ? subtotal : total  // batch = free delivery
+    const { data: orderId, error: orderError } = await supabase.rpc('create_order_with_inventory', {
+      p_provider_id: state.provider_id,
+      p_items: state.items.map(i => ({ product_id: i.product_id, quantity: i.quantity })),
+      p_delivery_address: address.trim(),
+      p_delivery_lat: deliveryLat,
+      p_delivery_lng: deliveryLng,
+      p_payment_method: paymentMethod,
+      p_notes: notes.trim() || null,
+      p_delivery_type: deliveryType,
+      p_slot_id: isBatch ? selectedSlotId : null,
+      p_scheduled_at: scheduledAt,
+    })
 
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        customer_id: user.id,
-        provider_id: state.provider_id,
-        status: paymentMethod === 'qrph' ? 'pending_payment' : 'placed',
-        total_amount: orderTotal,
-        delivery_address: address,
-        delivery_lat: deliveryLat,
-        delivery_lng: deliveryLng,
-        payment_method: paymentMethod,
-        notes,
-        delivery_type: deliveryType,
-        ...(isBatch && { slot_id: selectedSlotId, scheduled_at: scheduledAt }),
-      })
-      .select()
-      .single()
-
-    if (orderError || !order) {
+    if (orderError || !orderId) {
       setError(orderError?.message || 'Failed to place order. Please try again.')
-      setLoading(false)
-      return
-    }
-
-    const { error: itemsError } = await supabase.from('order_items').insert(
-      state.items.map(i => ({
-        order_id: order.id,
-        product_id: i.product_id,
-        quantity: i.quantity,
-        unit_price: i.price,
-      }))
-    )
-
-    if (itemsError) {
-      setError(itemsError.message)
       setLoading(false)
       return
     }
 
     // QR Ph: generate QR code and show it in a modal
     if (paymentMethod === 'qrph') {
+      let headers: Record<string, string>
+      try { headers = await authenticatedJsonHeaders() } catch (authError: any) {
+        setError(authError.message)
+        setLoading(false)
+        return
+      }
       const res = await fetch('/api/payment/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id: order.id }),
+        headers,
+        body: JSON.stringify({ order_id: orderId }),
       })
       let json: any = {}
       try { json = await res.json() } catch {}
       if (!res.ok || !json.qr_url) {
-        await supabase.from('order_items').delete().eq('order_id', order.id)
-        await supabase.from('orders').delete().eq('id', order.id)
+        await supabase.from('orders').update({ status: 'cancelled' }).eq('id', orderId).eq('customer_id', user.id)
         setError(json.error || 'Could not generate QR code. Please try again.')
         setLoading(false)
         return
@@ -296,7 +280,8 @@ export default function CheckoutPage() {
                   <button
                     type="button"
                     onClick={() => dispatch({ type: 'UPDATE_QTY', payload: { id: item.id, quantity: item.quantity + 1 } })}
-                    className="w-7 h-7 rounded-lg bg-water-500 text-white flex items-center justify-center hover:bg-water-600 transition-colors"
+                    disabled={item.max_quantity != null && item.quantity >= item.max_quantity}
+                    className="w-7 h-7 rounded-lg bg-water-500 disabled:bg-gray-200 text-white flex items-center justify-center hover:bg-water-600 transition-colors"
                   >
                     <Plus className="w-3 h-3" />
                   </button>

@@ -1,5 +1,33 @@
 # Changelog
 
+## Unreleased — 2026-09-20
+
+### New Features
+
+- **Secure PayMongo QR Ph checkout** — authenticated customers can create payment sessions using server-only credentials, with payment status confirmed through signed webhooks.
+- **Inventory-aware ordering** — products now include stock quantities, customers can only add available quantities, and checkout reserves stock atomically to prevent overselling.
+- **Automatic stock restoration** — reserved inventory is returned when an eligible order is cancelled or removed.
+- **30-minute inactivity timeout** — customer sessions remain available during active use and sign out after 30 minutes without activity.
+
+### Improvements
+
+- **Responsive dashboards** — customer, provider, and admin dashboards now adapt to narrow phones, tablets, and desktop screens with wrapping controls, mobile-safe charts, denser single-column cards, and truncation for long order details.
+- **Mobile accessibility** — primary navigation and dashboard controls now use larger touch targets and expose menu state to assistive technology.
+- **Centralized payment configuration** — obsolete provider wallet credential management was removed; PayMongo keys are configured through server environment variables.
+- **Payment reliability and security** — payment session creation is rate-limited and locked against duplicate requests; webhook signatures enforce timestamp freshness and replay-safe processing.
+- **Provider stock management** — providers can enter and update stock counts, while customers see live availability and out-of-stock states.
+
+### Database Migrations
+
+| # | Description |
+|---|-------------|
+| 015 | Add address category and default-address support |
+| 016 | Add order cancellation reasons |
+| 017 | Add provider automatic opening-hour schedule fields |
+| 018 | Add inventory quantities, atomic order reservation, stock restoration triggers, and payment processing locks |
+
+> Run migration 018 before deploying the inventory-aware checkout. Existing products intentionally start with zero stock and must be updated by providers.
+
 ## v1.3.1 — 2026-07-23
 
 > **Branch:** `v1.3-dev` — merge to `main` when all migrations are confirmed in production.
@@ -110,11 +138,11 @@ Run these in order in the Supabase SQL Editor (see `supabase-migrations.sql`):
 
 ### New Features
 
-#### GCash / Konfirma Payment Integration
-- GCash payment option at checkout — only appears when the provider has configured their Konfirma keys
-- Per-provider Konfirma keys (Public Key, Secret Key, Wallet Account ID) stored in the `providers` table
+#### QR Ph / PayMongo Payment Integration
+- QR Ph payment option at checkout using the platform PayMongo account
+- PayMongo credentials are stored only in server environment variables
 - New **Wallet** page in the provider sidebar to manage GCash keys and view webhook URL
-- Webhook endpoint (`/api/payment/webhook`) verifies Konfirma signatures and promotes orders from `pending_payment` → `placed` on payment confirmation
+- Webhook endpoint (`/api/payment/webhook`) verifies PayMongo signatures and promotes orders from `pending_payment` → `placed` on payment confirmation
 - GCash orders are hidden from the provider until payment is confirmed — no more ghost orders appearing before payment
 
 #### Order Payment Flow
@@ -140,8 +168,7 @@ Run these in order in the Supabase SQL Editor (see `supabase-migrations.sql`):
 - Profile page shows saved addresses with category icons and colors; supports adding and deleting
 
 #### Provider Wallet Page
-- Dedicated `/provider/wallet` page in the sidebar for managing Konfirma GCash keys
-- Status card shows green "GCash Active" or amber warning when not yet configured
+- Centralized PayMongo configuration managed by the platform
 - One-tap copy for the webhook URL
 - Webhook secret handled server-side automatically — providers don't need to configure it
 
@@ -153,21 +180,20 @@ Run these in order in the Supabase SQL Editor (see `supabase-migrations.sql`):
 - **AquaBot** — never asks the customer for an order ID; improved trigger words for recent order queries
 - **Map container error fixed** — "Map container is already initialized" resolved by adding stable `key` props to all `MapContainer` instances
 - **OrderStatusBadge crash fixed** — safe fallback for unknown status values instead of destructure crash
-- **Admin dashboard** — Konfirma key management per provider (view and save PK, SK, Wallet ID, Webhook Secret)
+- **Admin dashboard** — provider payment credentials removed; PayMongo is configured server-side
 
 ### Database Migrations
 
 | # | Description |
 |---|-------------|
-| 008 | `payment_status`, `payment_method`, `paylisten_session_id` columns on `orders` |
+| 008 | `payment_status`, `payment_method`, `paymongo_intent_id` columns on `orders` |
 | 009 | RLS policy — customers can cancel their own orders |
 | 010 | `product-images` storage bucket + policies |
-| 011 | `konfirma_pk`, `konfirma_sk`, `konfirma_wallet_id`, `konfirma_webhook_secret` on `providers` |
+| 011 | Removes obsolete provider-level gateway credentials |
 | 012 | Add `pending_payment` to `orders_status_check` constraint |
 | 013 | Add `lat`, `lng`, `label` columns to `customer_addresses` |
 
 ### New Files
 
-- `app/api/payment/create/route.ts` — creates a Konfirma payment session
-- `app/api/payment/webhook/route.ts` — receives and verifies Konfirma payment webhooks
-- `app/provider/wallet/page.tsx` — provider GCash key management page
+- `app/api/payment/create/route.ts` — creates a PayMongo QR Ph source
+- `app/api/payment/webhook/route.ts` — receives, verifies, and captures PayMongo payments

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard, ShoppingBag, Package, Settings, Wallet,
+  LayoutDashboard, ShoppingBag, Package, Settings,
   Droplets, LogOut, Menu, X, Flame, CalendarClock, Map,
 } from 'lucide-react'
 import { useProvider } from '@/lib/provider-context'
@@ -17,7 +17,6 @@ const NAV = [
   { href: '/provider/products', icon: Package, label: 'Products' },
   { href: '/provider/slots', icon: CalendarClock, label: 'Batch Slots' },
   { href: '/provider/delivery-map', icon: Map, label: 'Delivery Map' },
-  { href: '/provider/wallet', icon: Wallet, label: 'Wallet' },
   { href: '/provider/settings', icon: Settings, label: 'Settings' },
 ]
 
@@ -42,11 +41,11 @@ export function ProviderSidebar() {
     <>
       {/* Mobile top bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 h-14 flex items-center px-4 justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <img src="/logo.svg" alt="AquaGas" className="w-7 h-7 rounded-lg shrink-0" />
-          <span className="font-bold text-sm text-gray-900">{store?.store_name || 'Provider'}</span>
+          <span className="truncate font-bold text-sm text-gray-900 dark:text-gray-100">{store?.store_name || 'Provider'}</span>
         </div>
-        <button onClick={() => setMobileOpen(o => !o)} className="p-2 rounded-xl hover:bg-gray-50">
+        <button onClick={() => setMobileOpen(o => !o)} className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800" aria-label={mobileOpen ? 'Close provider navigation' : 'Open provider navigation'} aria-expanded={mobileOpen}>
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>

@@ -56,6 +56,7 @@ export type Database = {
           category: 'water' | 'lpg'
           image_url: string | null
           is_available: boolean
+          stock_quantity: number
         }
         Insert: Partial<Omit<Database['public']['Tables']['products']['Row'], 'id'>> & { provider_id: string; name: string; price: number; category: 'water' | 'lpg' }
         Update: Partial<Database['public']['Tables']['products']['Row']>
@@ -72,7 +73,10 @@ export type Database = {
           delivery_lng: number | null
           payment_method: string
           payment_status: 'unpaid' | 'pending' | 'paid'
-          konfirma_session_id: string | null
+          paymongo_intent_id: string | null
+          payment_session_started_at: string | null
+          payment_session_token: string | null
+          payment_capture_started_at: string | null
           notes: string | null
           admin_note: string | null
           created_at: string
@@ -118,6 +122,23 @@ export type Database = {
         }
         Insert: Partial<Database['public']['Tables']['platform_settings']['Row']>
         Update: Partial<Database['public']['Tables']['platform_settings']['Row']>
+      }
+    }
+    Functions: {
+      create_order_with_inventory: {
+        Args: {
+          p_provider_id: string
+          p_items: { product_id: string; quantity: number }[]
+          p_delivery_address: string
+          p_delivery_lat: number | null
+          p_delivery_lng: number | null
+          p_payment_method: 'cod' | 'qrph'
+          p_notes: string | null
+          p_delivery_type: 'standard' | 'batch'
+          p_slot_id: string | null
+          p_scheduled_at: string | null
+        }
+        Returns: string
       }
     }
   }

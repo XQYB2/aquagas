@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X, ChevronRight, ChevronLeft, LayoutDashboard, ShoppingBag, Package, Map, Sparkles, Bell, Settings, Wallet, CalendarClock, CheckCircle } from 'lucide-react'
+import { X, ChevronRight, ChevronLeft, LayoutDashboard, ShoppingBag, Package, Map, Sparkles, Bell, Settings, CalendarClock, CheckCircle } from 'lucide-react'
 
 const STEPS = [
   {
@@ -39,15 +39,6 @@ const STEPS = [
     title: 'Delivery Map',
     desc: 'See all active deliveries on a live map. Select stops and tap Route to open Google Maps with multi-stop navigation.',
     tip: 'Set your store location in Settings first so the 15km delivery radius works correctly.',
-  },
-  {
-    icon: Wallet,
-    color: 'from-emerald-500 to-emerald-700',
-    iconBg: 'bg-emerald-100',
-    iconColor: 'text-emerald-600',
-    title: 'GCash Payments',
-    desc: 'Connect your Konfirma account to accept GCash payments. Customers can pay digitally — funds go straight to your wallet.',
-    tip: 'You can accept both Cash on Delivery and GCash at the same time.',
   },
   {
     icon: CalendarClock,
