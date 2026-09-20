@@ -188,7 +188,6 @@ export default function CheckoutPage() {
         setLoading(false)
         return
       }
-      dispatch({ type: 'CLEAR_CART' })
       setQrUrl(json.qr_url)
       setQrModalOpen(true)
       setLoading(false)
@@ -679,13 +678,21 @@ export default function CheckoutPage() {
               Your order is saved. Once payment is confirmed, the store will prepare your delivery.
             </p>
             <button
-              onClick={() => { setQrModalOpen(false); router.push('/orders') }}
+              onClick={() => {
+                dispatch({ type: 'CLEAR_CART' })
+                setQrModalOpen(false)
+                router.push('/orders')
+              }}
               className="w-full py-3.5 rounded-2xl bg-water-500 hover:bg-water-600 text-white font-bold transition-colors"
             >
               I've Paid — Go to Orders
             </button>
             <button
-              onClick={() => setQrModalOpen(false)}
+              onClick={() => {
+                dispatch({ type: 'CLEAR_CART' })
+                setQrModalOpen(false)
+                router.push('/orders')
+              }}
               className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
             >
               Pay later from Orders

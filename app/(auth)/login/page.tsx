@@ -1,13 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
+import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
@@ -34,24 +33,36 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    setLoading(false)
-    if (error) {
-      setError(error.message)
-    } else {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
+
+      let destination = '/home'
       const userId = data.user?.id
+
       if (userId) {
-        const { data: profile } = await supabase
+        const profileRequest = supabase
           .from('profiles')
           .select('role')
           .eq('id', userId)
           .single()
-        if (profile?.role === 'provider') {
-          router.push('/provider')
-          return
-        }
+
+        const timeout = new Promise<null>(resolve => {
+          window.setTimeout(() => resolve(null), 5000)
+        })
+        const result = await Promise.race([profileRequest, timeout])
+        const role = result && 'data' in result ? result.data?.role : null
+
+        if (role === 'provider') destination = '/provider'
+        if (role === 'admin') destination = '/admin'
       }
-      router.push('/home')
+
+      // A full navigation prevents the auth screen from getting stuck if the
+      // client router or auth context is still processing the new session.
+      window.location.assign(destination)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.')
+      setLoading(false)
     }
   }
 
@@ -73,6 +84,10 @@ export default function LoginPage() {
       setError(error.message)
       setGoogleLoading(false)
     }
+  }
+
+  if (loading || googleLoading) {
+    return <AuthLoadingScreen message={googleLoading ? 'Connecting to Google…' : 'Signing you in…'} />
   }
 
   return (

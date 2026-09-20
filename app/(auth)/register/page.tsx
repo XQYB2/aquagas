@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
+import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -81,6 +82,10 @@ export default function RegisterPage() {
         </div>
       </div>
     )
+  }
+
+  if (loading || googleLoading) {
+    return <AuthLoadingScreen message={googleLoading ? 'Connecting to Google…' : 'Creating your AquaGas account…'} />
   }
 
   return (

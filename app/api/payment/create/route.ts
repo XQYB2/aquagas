@@ -9,7 +9,7 @@ const admin = createClient(
 )
 
 const PM_BASE = 'https://api.paymongo.com/v1'
-const PAYMENT_SESSION_TTL_MS = 5 * 60 * 1000
+const PAYMENT_SESSION_TTL_MS = 30 * 1000
 const PAYMENT_RATE_WINDOW_MS = 60 * 1000
 const MAX_PAYMENT_ATTEMPTS_PER_WINDOW = 5
 

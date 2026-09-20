@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Droplets } from 'lucide-react'
+import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen'
 
 export default function AuthSessionPage() {
   const router = useRouter()
@@ -55,15 +55,5 @@ export default function AuthSessionPage() {
     return () => clearTimeout(timer)
   }, [router])
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-water-500 to-water-700 flex items-center justify-center">
-          <Droplets className="w-6 h-6 text-white" />
-        </div>
-        <div className="w-6 h-6 border-2 border-water-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-gray-400">Signing you in…</p>
-      </div>
-    </div>
-  )
+  return <AuthLoadingScreen message="Completing your secure sign-in…" />
 }
