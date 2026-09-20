@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import { Search, Droplets, Flame, Sparkles, MapPin, LocateFixed, ChevronRight } from 'lucide-react'
+import { Search, Droplets, Flame, Sparkles, MapPin, LocateFixed, ChevronRight, ArrowUpDown } from 'lucide-react'
 import { ProviderCard } from '@/components/customer/ProviderCard'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
@@ -11,6 +11,7 @@ import { HowAquaGasWorks } from '@/components/HowAquaGasWorks'
 
 type Provider = Database['public']['Tables']['providers']['Row']
 type FilterType = 'all' | 'water' | 'lpg'
+type SortType = 'nearest' | 'rating_desc' | 'rating_asc' | 'fastest'
 
 const RADIUS_KM = 15
 
@@ -29,6 +30,7 @@ export default function HomePage() {
   const { user } = useAuth()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<FilterType>('all')
+  const [sort, setSort] = useState<SortType>('nearest')
   const [allProviders, setAllProviders] = useState<Provider[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -117,9 +119,16 @@ export default function HomePage() {
       .sort((a, b) => {
         const dA = haversineKm(userLat, userLng, a.lat!, a.lng!)
         const dB = haversineKm(userLat, userLng, b.lat!, b.lng!)
+        if (sort === 'rating_desc') return Number(b.rating || 0) - Number(a.rating || 0) || dA - dB
+        if (sort === 'rating_asc') return Number(a.rating || 0) - Number(b.rating || 0) || dA - dB
+        if (sort === 'fastest') {
+          const timeA = Number(a.delivery_time_min) > 0 ? Number(a.delivery_time_min) : Number.POSITIVE_INFINITY
+          const timeB = Number(b.delivery_time_min) > 0 ? Number(b.delivery_time_min) : Number.POSITIVE_INFINITY
+          return timeA - timeB || dA - dB
+        }
         return dA - dB
       })
-  }, [query, filter, allProviders, userLat, userLng, locationReady])
+  }, [query, filter, sort, allProviders, userLat, userLng, locationReady])
 
   return (
     <div>
@@ -211,7 +220,7 @@ export default function HomePage() {
         )}
 
         {/* Category Filters */}
-        <div className="flex flex-wrap gap-2 sm:gap-3 mb-8">
+        <div className="flex flex-wrap gap-2 sm:gap-3 mb-6">
           {[
             { key: 'all' as FilterType, label: 'All' },
             { key: 'water' as FilterType, label: '💧 Water Refill' },
@@ -236,11 +245,26 @@ export default function HomePage() {
         </div>
 
         {/* Providers Grid */}
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-bold text-gray-900">
             {filter === 'all' ? 'Nearby Stores' : filter === 'water' ? 'Water Refilling Stations' : 'LPG Gas Suppliers'}
             {locationReady && <span className="text-gray-400 font-normal text-sm ml-2">({providers.length})</span>}
           </h2>
+          <label className="flex min-h-11 w-full items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-600 shadow-sm transition-colors focus-within:border-water-400 focus-within:ring-2 focus-within:ring-water-100 sm:w-auto">
+            <ArrowUpDown className="h-4 w-4 shrink-0 text-water-500" aria-hidden="true" />
+            <span className="sr-only">Sort stores by</span>
+            <select
+              value={sort}
+              onChange={event => setSort(event.target.value as SortType)}
+              className="min-w-0 flex-1 cursor-pointer appearance-none bg-transparent py-2 pr-6 font-semibold text-gray-700 outline-none sm:min-w-44"
+              aria-label="Sort stores by"
+            >
+              <option value="nearest">Nearest to farthest</option>
+              <option value="rating_desc">Highest to lowest rating</option>
+              <option value="rating_asc">Lowest to highest rating</option>
+              <option value="fastest">Fastest delivery</option>
+            </select>
+          </label>
         </div>
 
         {loading ? (
@@ -254,7 +278,7 @@ export default function HomePage() {
           <div className="text-center py-20">
             <p className="text-4xl mb-4">🔍</p>
             <p className="text-gray-500 font-medium">No stores within {RADIUS_KM} km of your location.</p>
-            <button onClick={() => { setQuery(''); setFilter('all') }} className="mt-4 text-water-500 font-semibold text-sm hover:underline">
+            <button onClick={() => { setQuery(''); setFilter('all'); setSort('nearest') }} className="mt-4 text-water-500 font-semibold text-sm hover:underline">
               Clear filters
             </button>
           </div>

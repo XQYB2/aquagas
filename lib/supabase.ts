@@ -40,6 +40,8 @@ export type Database = {
           owner_email: string | null
           business_permit_url: string | null
           owner_id_url: string | null
+          phone: string | null
+          description: string | null
           created_at: string
         }
         Insert: Partial<Omit<Database['public']['Tables']['providers']['Row'], 'id' | 'created_at'>> & { user_id: string; store_name: string; address: string }

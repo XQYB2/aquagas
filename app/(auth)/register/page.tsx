@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen'
+import { LegalAgreementDialog, type LegalDocument } from '@/components/auth/LegalAgreementDialog'
 import { withTimeout } from '@/lib/async-timeout'
 
 export default function RegisterPage() {
@@ -21,9 +22,16 @@ export default function RegisterPage() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [openDocument, setOpenDocument] = useState<LegalDocument | null>(null)
+
+  const legalAccepted = agreedTerms && agreedPrivacy
 
   async function handleGoogleSignUp() {
     setError('')
+    if (!legalAccepted) {
+      setError('Read and accept the Terms & Conditions and Privacy Policy before continuing with Google.')
+      return
+    }
     setGoogleLoading(true)
     try {
       const { data, error } = await withTimeout(supabase.auth.signInWithOAuth({
@@ -104,8 +112,9 @@ export default function RegisterPage() {
         <button
           type="button"
           onClick={handleGoogleSignUp}
-          disabled={googleLoading || loading}
-          className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-colors disabled:opacity-60 shadow-sm mb-4"
+          disabled={googleLoading || loading || !legalAccepted}
+          title={!legalAccepted ? 'Accept the Terms & Conditions and Privacy Policy first' : undefined}
+          className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-colors disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 disabled:opacity-70 shadow-sm"
         >
           {googleLoading ? (
             <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
@@ -119,6 +128,9 @@ export default function RegisterPage() {
           )}
           {googleLoading ? 'Redirecting…' : 'Continue with Google'}
         </button>
+        {!legalAccepted && (
+          <p className="mb-4 mt-2 text-center text-xs text-gray-500">Accept both agreements below to enable Google signup.</p>
+        )}
 
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 h-px bg-gray-200" />
@@ -151,30 +163,34 @@ export default function RegisterPage() {
 
           {/* Terms & Privacy checkboxes */}
           <div className="space-y-2.5">
-            <label className="flex items-start gap-3 cursor-pointer">
+            <div className="flex items-start gap-3">
               <input
                 type="checkbox"
                 checked={agreedTerms}
-                onChange={e => setAgreedTerms(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-water-500 focus:ring-water-300 cursor-pointer"
+                readOnly
+                tabIndex={-1}
+                aria-label="Terms and Conditions accepted"
+                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-water-500 focus:ring-water-300"
               />
               <span className="text-sm text-gray-600">
                 I agree to the{' '}
-                <Link href="/terms" target="_blank" className="text-water-600 font-semibold hover:underline">Terms & Conditions</Link>
+                <button type="button" onClick={() => setOpenDocument('terms')} className="font-semibold text-water-600 hover:underline focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-300">Terms & Conditions</button>
               </span>
-            </label>
-            <label className="flex items-start gap-3 cursor-pointer">
+            </div>
+            <div className="flex items-start gap-3">
               <input
                 type="checkbox"
                 checked={agreedPrivacy}
-                onChange={e => setAgreedPrivacy(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-water-500 focus:ring-water-300 cursor-pointer"
+                readOnly
+                tabIndex={-1}
+                aria-label="Privacy Policy accepted"
+                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-water-500 focus:ring-water-300"
               />
               <span className="text-sm text-gray-600">
                 I accept the{' '}
-                <Link href="/privacy" target="_blank" className="text-water-600 font-semibold hover:underline">Privacy Policy</Link>
+                <button type="button" onClick={() => setOpenDocument('privacy')} className="font-semibold text-water-600 hover:underline focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-300">Privacy Policy</button>
               </span>
-            </label>
+            </div>
           </div>
 
           {error && <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-sm text-red-600">{error}</div>}
@@ -189,6 +205,17 @@ export default function RegisterPage() {
           <Link href="/login" className="text-water-600 font-semibold hover:underline">Sign in</Link>
         </p>
       </div>
+
+      <LegalAgreementDialog
+        documentType={openDocument}
+        onClose={() => setOpenDocument(null)}
+        onAccept={documentType => {
+          if (documentType === 'terms') setAgreedTerms(true)
+          if (documentType === 'privacy') setAgreedPrivacy(true)
+          setOpenDocument(null)
+          setError('')
+        }}
+      />
     </div>
   )
 }

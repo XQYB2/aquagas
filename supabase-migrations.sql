@@ -267,6 +267,11 @@ ALTER TABLE public.providers
   ADD COLUMN IF NOT EXISTS open_time    time,
   ADD COLUMN IF NOT EXISTS close_time   time;
 
+-- Provider contact/profile fields used by both web and mobile settings.
+ALTER TABLE public.providers
+  ADD COLUMN IF NOT EXISTS phone       text,
+  ADD COLUMN IF NOT EXISTS description text;
+
 
 -- ============================================================
 -- 018 — Secure inventory reservation and payment-session locks

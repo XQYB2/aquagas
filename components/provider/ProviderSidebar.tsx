@@ -7,7 +7,7 @@ import {
   Droplets, LogOut, Menu, X, Flame, CalendarClock, Map,
 } from 'lucide-react'
 import { useProvider } from '@/lib/provider-context'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '@/lib/theme-context'
 
@@ -27,7 +27,36 @@ export function ProviderSidebar() {
   const { theme, setTheme } = useTheme()
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  const newOrders = orders.filter(o => o.status === 'placed').length
+  const [seenOrderIds, setSeenOrderIds] = useState<string[]>([])
+  const placedOrderIds = orders.filter(o => o.status === 'placed').map(o => o.id)
+  const newOrders = placedOrderIds.filter(id => !seenOrderIds.includes(id)).length
+  const seenStorageKey = store?.id ? `aquagas-provider-seen-orders:${store.id}` : null
+
+  useEffect(() => {
+    if (!seenStorageKey) return
+    try {
+      const saved = JSON.parse(localStorage.getItem(seenStorageKey) || '[]')
+      setSeenOrderIds(Array.isArray(saved) ? saved : [])
+    } catch {
+      setSeenOrderIds([])
+    }
+  }, [seenStorageKey])
+
+  useEffect(() => {
+    if (!seenStorageKey || !pathname.startsWith('/provider/orders')) return
+    setSeenOrderIds(previous => {
+      const next = Array.from(new Set([...previous, ...placedOrderIds]))
+      localStorage.setItem(seenStorageKey, JSON.stringify(next))
+      return next
+    })
+  }, [pathname, seenStorageKey, orders])
+
+  function markOrdersSeen() {
+    if (!seenStorageKey) return
+    const next = Array.from(new Set([...seenOrderIds, ...placedOrderIds]))
+    localStorage.setItem(seenStorageKey, JSON.stringify(next))
+    setSeenOrderIds(next)
+  }
 
   function handleLogout() {
     logout()
@@ -40,7 +69,7 @@ export function ProviderSidebar() {
   return (
     <>
       {/* Mobile top bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 h-14 flex items-center px-4 justify-between">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] flex items-center px-4 justify-between">
         <div className="flex min-w-0 items-center gap-2">
           <img src="/logo.svg" alt="AquaGas" className="w-7 h-7 rounded-lg shrink-0" />
           <span className="truncate font-bold text-sm text-gray-900 dark:text-gray-100">{store?.store_name || 'Provider'}</span>
@@ -57,7 +86,8 @@ export function ProviderSidebar() {
 
       {/* Sidebar */}
       <aside className={`
-        fixed top-0 left-0 h-full z-40 w-60 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800
+        fixed top-0 left-0 h-[100dvh] z-40 w-60 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800
+        pt-[env(safe-area-inset-top)] pb-[max(env(safe-area-inset-bottom),0.75rem)]
         flex flex-col transition-transform duration-200
         md:translate-x-0
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -88,7 +118,10 @@ export function ProviderSidebar() {
               <Link
                 key={href}
                 href={href}
-                onClick={() => setMobileOpen(false)}
+                onClick={() => {
+                  if (href === '/provider/orders') markOrdersSeen()
+                  setMobileOpen(false)
+                }}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   active
                     ? 'bg-water-50 dark:bg-water-900/30 text-water-700 dark:text-water-400 font-semibold'
@@ -118,7 +151,7 @@ export function ProviderSidebar() {
           </button>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium"
           >
             <LogOut className="w-4 h-4" />
             Sign Out

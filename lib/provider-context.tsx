@@ -273,7 +273,7 @@ export function ProviderAuthProvider({ children }: { children: React.ReactNode }
 
   async function updateStore(updates: Partial<ProviderStore>) {
     if (!state.store) return
-    const { phone, description, ...dbUpdates } = updates
+    const dbUpdates = updates
     const updated = { ...state.store, ...updates }
     setState(s => ({ ...s, store: updated }))
     await supabase.from('providers').update(dbUpdates).eq('id', state.store.id)

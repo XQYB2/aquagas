@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { MessageCircle, X, Send, Loader2, Sparkles, Mic, MicOff, Volume2, VolumeX } from 'lucide-react'
 import { useProvider } from '@/lib/provider-context'
 import { useTheme } from '@/lib/theme-context'
+import { supabase } from '@/lib/supabase'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -134,10 +135,12 @@ export function ProviderBot() {
     setInput('')
     setLoading(true)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) throw new Error('Your session has expired.')
       const res = await fetch('/api/provider-chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: next, storeContext: buildStoreContext() }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ messages: next }),
       })
       const data = await res.json()
       const reply = data.reply ?? data.error ?? 'Sorry, something went wrong.'

@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { createClient } from '@supabase/supabase-js'
+
+const admin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } }
+)
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
 
 const SYSTEM_PROMPT = `You are a smart store assistant for AquaGas providers — local water and LPG delivery store owners in the Philippines.
@@ -64,9 +71,59 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { messages, storeContext } = await req.json()
+    const authorization = req.headers.get('authorization')
+    const accessToken = authorization?.startsWith('Bearer ') ? authorization.slice(7) : null
+    if (!accessToken) return NextResponse.json({ error: 'Authentication required.' }, { status: 401, headers: CORS_HEADERS })
+
+    const authClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { persistSession: false } }
+    )
+    const { data: { user } } = await authClient.auth.getUser(accessToken)
+    if (!user) return NextResponse.json({ error: 'Invalid or expired session.' }, { status: 401, headers: CORS_HEADERS })
+
+    const { data: profile } = await admin.from('profiles').select('role').eq('id', user.id).maybeSingle()
+    if (profile?.role !== 'provider') return NextResponse.json({ error: 'Provider access required.' }, { status: 403, headers: CORS_HEADERS })
+
+    const { messages } = await req.json()
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: 'Invalid request.' }, { status: 400, headers: CORS_HEADERS })
+    }
+
+    const { data: store } = await admin.from('providers').select('*').eq('user_id', user.id).maybeSingle()
+    if (!store) return NextResponse.json({ error: 'Provider store not found.' }, { status: 404, headers: CORS_HEADERS })
+
+    const [productsResult, ordersResult] = await Promise.all([
+      admin.from('products').select('name,price,unit,category,is_available,stock_quantity').eq('provider_id', store.id),
+      admin.from('orders')
+        .select('id,status,total_amount,created_at,delivery_address,payment_method,payment_status,delivery_type,profiles!orders_customer_id_fkey(full_name,email)')
+        .eq('provider_id', store.id)
+        .order('created_at', { ascending: false })
+        .limit(100),
+    ])
+    const orders = ordersResult.data || []
+    const today = new Date().toDateString()
+    const todayOrders = orders.filter(order => new Date(order.created_at).toDateString() === today)
+    const ordersByStatus: Record<string, number> = {}
+    for (const order of orders) ordersByStatus[order.status] = (ordersByStatus[order.status] || 0) + 1
+    const storeContext = {
+      storeName: store.store_name,
+      storeOpen: store.is_open,
+      serviceType: store.service_type,
+      deliveryFee: store.delivery_fee,
+      estimatedDeliveryMinutes: store.delivery_time_min,
+      totalOrdersToday: todayOrders.length,
+      revenueToday: todayOrders.filter(order => order.status !== 'cancelled').reduce((sum, order) => sum + Number(order.total_amount || 0), 0),
+      totalOrders: orders.length,
+      ordersByStatus,
+      products: productsResult.data || [],
+      recentOrders: orders.slice(0, 10).map((order: any) => ({
+        id: order.id.slice(-6).toUpperCase(), status: order.status, amount: order.total_amount,
+        customer: order.profiles?.full_name || order.profiles?.email || 'Customer',
+        address: order.delivery_address, paymentMethod: order.payment_method,
+        paymentStatus: order.payment_status, deliveryType: order.delivery_type,
+      })),
     }
 
     const contextBlock = storeContext

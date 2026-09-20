@@ -1,5 +1,57 @@
 # Changelog
 
+## Unreleased — 2026-09-21
+
+### Customer Mobile
+
+- Added PayMongo QR Ph checkout using authenticated API requests, inventory-safe order creation, a QR payment modal, and automatic payment-status polling.
+- Added notification deep links so tapping an order notification opens the corresponding order details.
+- Added remote push-token registration for signed-in customers and support for opening an order from a phone notification.
+- Added responsive AquaGas branding, theme and notification shortcuts, and store sorting by distance, rating, or delivery speed.
+- Improved login layout and standardized the heading to **Welcome**.
+
+### Provider Mobile
+
+- Fixed bottom navigation and floating assistant placement for device safe areas.
+- Fixed notification navigation, unread badge persistence, notification-to-order routing, and order-detail back navigation.
+- Added remote push-token registration for providers and notification-tap routing to the related order.
+- Fixed batch delivery slot day values so the database receives numeric `day_of_week` values instead of labels such as `Friday`.
+- Added product stock quantity entry, validation, stock display, and low-stock/out-of-stock states.
+- Improved provider profile saving and added support for phone and description fields.
+- Expanded the provider assistant's context and secured its API with authenticated provider sessions.
+- Improved responsive login alignment and standardized the heading to **Welcome**.
+
+### Website and Backend
+
+- Added scroll-to-end Terms & Conditions and Privacy Policy acceptance during registration; email and Google signup remain disabled until both documents are explicitly accepted.
+- Added a responsive landing-page download section for the Customer and Provider Android apps, using direct APK links until official app-store releases are available.
+- Added authenticated device-token registration at `/api/notifications/register`.
+- Added a secret-protected Supabase order-event webhook at `/api/notifications/order-event` that sends Expo notifications for relevant order and payment changes.
+- Secured `/api/provider-chat` by verifying the Supabase session and provider role, then deriving store, product, and order context on the server.
+- Added customer store sorting by nearest distance, highest/lowest rating, and fastest delivery.
+- Added provider phone and description fields to the shared schema and provider context.
+
+### Database and Deployment
+
+- Added versioned migration `202609210001_provider_inventory.sql` for provider profile and inventory fields.
+- Added versioned migration `202609210002_push_tokens.sql` for device push tokens, indexes, and row-level security policies.
+- Added `supabase/MIGRATIONS.md` with CLI migration and database-webhook setup instructions.
+- Added `ORDER_NOTIFICATION_WEBHOOK_SECRET` to `.env.example`.
+- Configured the intended order webhook scope as `public.orders` on **Insert** and **Update**, posting to `https://www.aquagas.shop/api/notifications/order-event` with the `x-webhook-secret` header.
+
+### Quality Assurance
+
+- Added automated critical-flow contract tests for atomic inventory reservation, insufficient stock, cancellation stock restoration, and PayMongo authentication, amount, and webhook-signature handling.
+- Verified all four critical-flow tests pass.
+- Verified the website TypeScript check and Android exports for both mobile applications.
+
+### Activation Still Required
+
+- Apply the versioned migrations to the linked Supabase project with `npx supabase db push`.
+- Store the same generated secret as `ORDER_NOTIFICATION_WEBHOOK_SECRET` in Vercel and as the Supabase webhook header `x-webhook-secret`, then redeploy the website.
+- Configure Expo/EAS Android FCM credentials, create new application builds, reinstall them on test phones, and sign in so device tokens are registered.
+- Test customer and provider notifications with each app in the foreground, background, and fully closed states.
+
 ## Unreleased — 2026-09-20
 
 ### New Features

@@ -34,6 +34,9 @@ const SERVICES = [
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-500 focus-visible:ring-offset-2'
 
 export default function HomePage() {
+  const customerAppUrl = process.env.NEXT_PUBLIC_CUSTOMER_APP_URL
+  const providerAppUrl = process.env.NEXT_PUBLIC_PROVIDER_APP_URL
+
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900">
       <PublicHeader />
@@ -108,6 +111,30 @@ export default function HomePage() {
 
           <HowAquaGasWorks />
 
+          <section
+            aria-labelledby="mobile-apps-title"
+            className="mx-auto w-full max-w-2xl border-t border-gray-200 pt-8"
+          >
+            <h2 id="mobile-apps-title" className="text-center text-sm font-semibold uppercase tracking-wider text-gray-400">
+              Get the app
+            </h2>
+            <div className="mt-5 grid gap-3" aria-label="AquaGas Android app downloads">
+              <AppDownloadButton
+                href={customerAppUrl}
+                title="Customer"
+                description="Order water & gas on your phone"
+              />
+              <AppDownloadButton
+                href={providerAppUrl}
+                title="Provider"
+                description="Manage your store & deliveries"
+              />
+            </div>
+            <p className="mt-4 text-center text-xs leading-5 text-gray-400">
+              Direct Android download while our Play Store and App Store releases are being prepared.
+            </p>
+          </section>
+
           <section className="flex flex-col gap-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between md:p-8">
             <div className="flex items-start gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-water-50 text-water-600">
@@ -132,5 +159,49 @@ export default function HomePage() {
 
       <PublicFooter />
     </div>
+  )
+}
+
+type AppDownloadButtonProps = {
+  href?: string
+  title: string
+  description: string
+}
+
+function AppDownloadButton({ href, title, description }: AppDownloadButtonProps) {
+  const content = (
+    <>
+      <img src="/logo.svg" alt="" className="h-12 w-12 shrink-0 rounded-xl" />
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-bold text-gray-900 sm:text-base">
+          <span className="text-water-600">Aqua</span><span className="text-red-600">Gas</span>{' '}
+          <span>{title}</span>
+        </span>
+        <span className="mt-0.5 block text-xs text-gray-400 sm:text-sm">{description}</span>
+      </span>
+      <span className={`shrink-0 rounded-xl border px-4 py-2 text-xs font-bold sm:text-sm ${
+        href
+          ? 'border-water-100 bg-water-50 text-water-600'
+          : 'border-gray-200 bg-gray-50 text-gray-400'
+      }`}>
+        {href ? 'Download' : 'Coming soon'}
+      </span>
+    </>
+  )
+
+  const className = `flex min-h-[5rem] w-full items-center gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-3 text-left shadow-sm transition-colors sm:gap-4 sm:px-5 ${
+    href
+      ? `hover:border-water-200 hover:bg-water-50/30 ${focusRing}`
+      : 'cursor-not-allowed'
+  }`
+
+  if (!href) {
+    return <div className={className} aria-disabled="true">{content}</div>
+  }
+
+  return (
+    <a href={href} className={className} download>
+      {content}
+    </a>
   )
 }

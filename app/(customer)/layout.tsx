@@ -13,7 +13,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
         <div className="min-h-screen flex flex-col">
           <OfflineBanner />
           <Navbar />
-          <main className="flex-1 pb-[calc(var(--mobile-nav-height)+env(safe-area-inset-bottom)+1rem)] md:pb-8">
+          <main className="flex-1 pb-[calc(var(--mobile-nav-height)+max(env(safe-area-inset-bottom),0.75rem)+1rem)] md:pb-8">
             {children}
           </main>
           <BottomNav />

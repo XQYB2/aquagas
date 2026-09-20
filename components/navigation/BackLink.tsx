@@ -1,4 +1,7 @@
+'use client'
+
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -23,9 +26,17 @@ export function BackLink({
   iconOnly = false,
   className,
 }: BackLinkProps) {
+  const router = useRouter()
+
   return (
     <Link
       href={href}
+      onClick={event => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+        event.preventDefault()
+        if (window.history.length > 1) router.back()
+        else router.push(href)
+      }}
       aria-label={iconOnly ? label : undefined}
       className={cn(
         'inline-flex h-11 min-w-[2.75rem] items-center justify-center rounded-xl text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-500 focus-visible:ring-offset-2',
