@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen'
+import { withTimeout } from '@/lib/async-timeout'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -24,19 +25,23 @@ export default function RegisterPage() {
   async function handleGoogleSignUp() {
     setError('')
     setGoogleLoading(true)
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        skipBrowserRedirect: false,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
+    try {
+      const { data, error } = await withTimeout(supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          skipBrowserRedirect: true,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
-      },
-    })
-    if (error) {
-      setError(error.message)
+      }), 15000, 'Google sign-up took too long. Please try again.')
+      if (error) throw error
+      if (!data.url) throw new Error('Google sign-up could not be started. Please try again.')
+      window.location.assign(data.url)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to connect to Google. Please try again.')
       setGoogleLoading(false)
     }
   }
@@ -50,25 +55,23 @@ export default function RegisterPage() {
     }
     setLoading(true)
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName, phone },
-      }
-    })
+    try {
+      const { error } = await withTimeout(supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: {
+          data: { full_name: fullName.trim(), phone: phone.trim() },
+        }
+      }), 15000, 'Registration took too long. Please try again.')
 
-    if (error) {
-      setError(error.message)
+      if (error) throw error
+
+      // The database trigger creates the customer profile from user metadata.
+      setSuccess(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create your account. Please try again.')
       setLoading(false)
-      return
     }
-
-    // The `on_auth_user_created` DB trigger auto-creates the profiles row
-    // (role='customer') from raw_user_meta_data, so no manual insert needed here.
-
-    setSuccess(true)
-    setLoading(false)
   }
 
   if (success) {

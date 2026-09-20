@@ -37,10 +37,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   })
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setState(s => ({ ...s, session, user: session?.user ?? null, loading: false }))
-      if (session?.user) fetchProfile(session.user.id)
-    })
+    let active = true
+    const startupTimeout = window.setTimeout(() => {
+      if (active) setState(s => ({ ...s, loading: false }))
+    }, 10000)
+
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (!active) return
+        window.clearTimeout(startupTimeout)
+        setState(s => ({ ...s, session, user: session?.user ?? null, loading: false }))
+        if (session?.user) fetchProfile(session.user.id)
+      })
+      .catch(() => {
+        if (!active) return
+        window.clearTimeout(startupTimeout)
+        setState(s => ({ ...s, loading: false }))
+      })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
@@ -52,7 +65,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       else setState(s => ({ ...s, profile: null }))
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      active = false
+      window.clearTimeout(startupTimeout)
+      subscription.unsubscribe()
+    }
   }, [])
 
   async function fetchProfile(userId: string) {

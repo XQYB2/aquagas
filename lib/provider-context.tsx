@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from './supabase'
+import { withTimeout } from './async-timeout'
 
 export type OrderStatus =
   | 'pending_payment'
@@ -102,24 +103,39 @@ export function ProviderAuthProvider({ children }: { children: React.ReactNode }
   })
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        await loadProviderData(session.user.id)
-      } else {
-        setState(s => ({ ...s, loading: false }))
-      }
-    })
+    let active = true
+    const startupTimeout = window.setTimeout(() => {
+      if (active) setState(s => ({ ...s, loading: false }))
+    }, 10000)
+
+    withTimeout(supabase.auth.getSession(), 8000, 'Provider session verification timed out.')
+      .then(async ({ data: { session } }) => {
+        if (!active) return
+        window.clearTimeout(startupTimeout)
+        if (session?.user) {
+          await withTimeout(loadProviderData(session.user.id), 15000, 'Provider data took too long to load.')
+            .catch(() => setState(s => ({ ...s, loading: false })))
+        } else setState(s => ({ ...s, loading: false }))
+      })
+      .catch(() => {
+        if (active) setState(s => ({ ...s, loading: false }))
+      })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
         setState({ store: null, products: [], orders: [], isLoggedIn: false, loading: false })
       } else if (event === 'SIGNED_IN' && session?.user) {
-        await loadProviderData(session.user.id)
+        await withTimeout(loadProviderData(session.user.id), 15000, 'Provider data took too long to load.')
+          .catch(() => setState(s => ({ ...s, loading: false })))
       }
       // ignore TOKEN_REFRESHED, USER_UPDATED, INITIAL_SESSION — already handled by getSession above
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      active = false
+      window.clearTimeout(startupTimeout)
+      subscription.unsubscribe()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -224,17 +240,30 @@ export function ProviderAuthProvider({ children }: { children: React.ReactNode }
   }
 
   async function login(email: string, password: string): Promise<boolean> {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error || !data.user) return false
+    try {
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password }),
+        15000,
+        'Provider sign-in took too long.'
+      )
+      if (error || !data.user) return false
 
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
-    if (!profile || profile.role !== 'provider') {
-      await supabase.auth.signOut()
+      const { data: profile } = await withTimeout(
+        supabase.from('profiles').select('role').eq('id', data.user.id).single(),
+        5000,
+        'Provider profile lookup took too long.'
+      )
+      if (!profile || profile.role !== 'provider') {
+        await supabase.auth.signOut()
+        return false
+      }
+
+      await withTimeout(loadProviderData(data.user.id), 15000, 'Provider data took too long to load.')
+      return true
+    } catch {
+      setState(s => ({ ...s, loading: false }))
       return false
     }
-
-    await loadProviderData(data.user.id)
-    return true
   }
 
   async function logout() {

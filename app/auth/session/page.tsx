@@ -4,55 +4,43 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen'
+import { withTimeout } from '@/lib/async-timeout'
 
 export default function AuthSessionPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Give Supabase JS a moment to parse the hash fragment from the URL
-    const timer = setTimeout(async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+    let active = true
 
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single()
+    async function finishSignIn() {
+      try {
+        const { data: { session } } = await withTimeout(
+          supabase.auth.getSession(),
+          8000,
+          'Session verification timed out.'
+        )
+        if (!active || !session?.user) throw new Error('No active session found.')
 
-        if (profile?.role === 'provider') {
-          router.replace('/provider')
-        } else {
-          router.replace('/home')
-        }
-      } else {
-        // Listen for auth state change — Supabase fires this when it processes the hash
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-          if (session?.user) {
-            subscription.unsubscribe()
-            supabase.from('profiles').select('role').eq('id', session.user.id).single()
-              .then(({ data: profile }) => {
-                if (profile?.role === 'provider') {
-                  router.replace('/provider')
-                } else {
-                  router.replace('/home')
-                }
-              })
-          } else if (event === 'SIGNED_OUT') {
-            subscription.unsubscribe()
-            router.replace('/login?error=oauth_failed')
-          }
-        })
+        const { data: profile } = await withTimeout(
+          supabase.from('profiles').select('role').eq('id', session.user.id).single(),
+          5000,
+          'Profile lookup timed out.'
+        )
+        if (!active) return
 
-        // Fallback after 5 seconds
-        setTimeout(() => {
-          subscription.unsubscribe()
-          router.replace('/login?error=oauth_failed')
-        }, 5000)
+        if (profile?.role === 'provider') window.location.replace('/provider')
+        else if (profile?.role === 'admin') window.location.replace('/admin')
+        else window.location.replace('/home')
+      } catch {
+        if (active) router.replace('/login?error=oauth_failed')
       }
-    }, 500)
+    }
 
-    return () => clearTimeout(timer)
+    const timer = window.setTimeout(finishSignIn, 500)
+    return () => {
+      active = false
+      window.clearTimeout(timer)
+    }
   }, [router])
 
   return <AuthLoadingScreen message="Completing your secure sign-in…" />

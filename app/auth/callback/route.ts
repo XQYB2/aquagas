@@ -3,6 +3,15 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies'
 
+function withServerTimeout<T>(request: PromiseLike<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    Promise.resolve(request),
+    new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Authentication callback timed out.')), timeoutMs)
+    }),
+  ])
+}
+
 export async function GET(req: NextRequest) {
   const { origin, searchParams } = new URL(req.url)
   const next = searchParams.get('next')
@@ -45,7 +54,16 @@ export async function GET(req: NextRequest) {
       }
     )
 
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    let data
+    let error
+    try {
+      const result = await withServerTimeout(supabase.auth.exchangeCodeForSession(code), 10000)
+      data = result.data
+      error = result.error
+    } catch (callbackError) {
+      console.error('[auth/callback] timed out:', callbackError)
+      return NextResponse.redirect(`${origin}/login?error=oauth_timeout`)
+    }
 
     if (error) {
       console.error('[auth/callback] exchangeCodeForSession error:', error.message)
@@ -53,14 +71,22 @@ export async function GET(req: NextRequest) {
     }
 
     if (data.session) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.session.user.id)
-        .single()
+      let profile = null
+      try {
+        const profileResult = await withServerTimeout(
+          supabase.from('profiles').select('role').eq('id', data.session.user.id).single(),
+          5000
+        )
+        profile = profileResult.data
+      } catch {
+        return NextResponse.redirect(`${origin}/home`)
+      }
 
       if (profile?.role === 'provider') {
         return NextResponse.redirect(`${origin}/provider`)
+      }
+      if (profile?.role === 'admin') {
+        return NextResponse.redirect(`${origin}/admin`)
       }
       return NextResponse.redirect(`${origin}/home`)
     }

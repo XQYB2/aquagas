@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen'
+import { withTimeout } from '@/lib/async-timeout'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -34,7 +35,11 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password }),
+        15000,
+        'Sign-in took too long. Please wait a minute, then try again.'
+      )
       if (error) throw error
 
       let destination = '/home'
@@ -61,7 +66,9 @@ export default function LoginPage() {
       // client router or auth context is still processing the new session.
       window.location.assign(destination)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.')
+      const message = err instanceof Error ? err.message : 'Unable to sign in. Please try again.'
+      const isRateLimited = /rate limit|too many requests|over_email_send_rate_limit/i.test(message)
+      setError(isRateLimited ? 'Too many sign-in attempts. Please wait one minute before trying again.' : message)
       setLoading(false)
     }
   }
@@ -69,19 +76,23 @@ export default function LoginPage() {
   async function handleGoogleLogin() {
     setError('')
     setGoogleLoading(true)
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        skipBrowserRedirect: false,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
+    try {
+      const { data, error } = await withTimeout(supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          skipBrowserRedirect: true,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
-      },
-    })
-    if (error) {
-      setError(error.message)
+      }), 15000, 'Google sign-in took too long. Please try again.')
+      if (error) throw error
+      if (!data.url) throw new Error('Google sign-in could not be started. Please try again.')
+      window.location.assign(data.url)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to connect to Google. Please try again.')
       setGoogleLoading(false)
     }
   }
