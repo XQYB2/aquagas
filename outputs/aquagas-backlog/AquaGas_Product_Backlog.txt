@@ -1,0 +1,146 @@
+AQUAGAS PRODUCT AND SPRINT BACKLOG
+Source: AquaGas website Git history, release tags v1.2 through v1.7, README, and CHANGELOG
+Status convention: Done = present in a committed website release
+
+Columns:
+ID | Type | As a... | I want to... | So that... | Priority | Story Points | Sprint | Status | Acceptance Criteria
+
+========================================================================================================================
+SPRINT 1 — CORE PLATFORM, ACCOUNTS, AND CATALOG
+========================================================================================================================
+
+AG-001 | Epic | Product Owner | establish the AquaGas delivery platform | customers, providers, and administrators can use one coordinated system | Critical | 21 | Sprint 1 | Done | Customer, provider, and admin areas are available with role-based access.
+AG-002 | User Story | Customer | register using email and password | I can create an AquaGas account | Critical | 5 | Sprint 1 | Valid customer details create an authenticated customer profile.
+AG-003 | User Story | Customer | sign in using email and password | I can access my orders and profile securely | Critical | 3 | Sprint 1 | Valid credentials open the customer area; invalid credentials show an error.
+AG-004 | User Story | Customer | sign in with Google | I can access AquaGas without creating another password | High | 5 | Sprint 1 | Google OAuth returns the customer to the correct authenticated route.
+AG-005 | User Story | User | reset a forgotten password | I can regain access to my account | High | 3 | Sprint 1 | A reset email is sent and the recovery link allows a new password.
+AG-006 | Technical Improvement | System | enforce role-based routing | customers and providers cannot access each other's protected pages | Critical | 5 | Sprint 1 | Provider accounts redirect to provider pages; customer accounts remain in customer pages.
+AG-007 | User Story | Customer | browse approved water and LPG stores | I can choose a legitimate nearby supplier | Critical | 5 | Sprint 1 | Only approved/active providers appear with name, service type, address, status, rating, and delivery details.
+AG-008 | User Story | Customer | filter stores by water or LPG | I can find the service I need quickly | Medium | 3 | Sprint 1 | Selecting a service filter updates the visible provider list correctly.
+AG-009 | User Story | Customer | open a store detail page | I can review its products and delivery information | Critical | 5 | Sprint 1 | Store details show provider information, products, availability, rating, and reviews.
+AG-010 | User Story | Customer | add store products to my cart | I can prepare an order | Critical | 5 | Sprint 1 | Available products can be added and cart totals update immediately.
+AG-011 | Business Rule | Product Owner | restrict a cart to one provider | orders remain operationally valid | High | 3 | Sprint 1 | Adding from another provider requires confirmation and clears the previous provider's cart.
+AG-012 | User Story | Customer | change item quantities | I can order the correct number of containers or cylinders | High | 3 | Sprint 1 | Plus and minus controls update quantities; removing the last item is confirmed.
+AG-013 | User Story | Provider | manage products | my current catalog is visible to customers | Critical | 8 | Sprint 1 | Provider can add, edit, toggle availability, and delete water or LPG products.
+AG-014 | User Story | Provider | configure store information | customers receive accurate business and delivery details | High | 5 | Sprint 1 | Store name, address, phone, service type, fee, delivery time, and open status can be saved.
+AG-015 | User Story | Administrator | manage providers | only authorized businesses can sell through AquaGas | Critical | 8 | Sprint 1 | Admin can create, review, approve, reject, and inspect provider records.
+AG-016 | User Story | Administrator | manage customers and orders | I can oversee platform activity | High | 8 | Sprint 1 | Admin pages list customers and orders and expose relevant status information.
+
+========================================================================================================================
+SPRINT 2 — ORDERING, DELIVERY, TRACKING, AND MAPS
+========================================================================================================================
+
+AG-017 | Epic | Product Owner | provide end-to-end order fulfillment | AquaGas can support real water and LPG deliveries | Critical | 21 | Sprint 2 | Checkout, tracking, provider fulfillment, cancellation, and delivery completion work together.
+AG-018 | User Story | Customer | check out using Cash on Delivery | I can pay when my order arrives | Critical | 8 | Sprint 2 | Checkout validates customer details, inserts the order and items, and clears the cart after success.
+AG-019 | User Story | Customer | pin my delivery location on a map | the provider can find the correct destination | Critical | 5 | Sprint 2 | Customer can click the map or use GPS and the coordinates are stored on the order.
+AG-020 | User Story | Customer | view my order history | I can monitor current and previous purchases | High | 5 | Sprint 2 | Orders display provider, total, date, payment, delivery type, and current status.
+AG-021 | User Story | Customer | track an order through detailed stages | I know what the provider is doing | Critical | 8 | Sprint 2 | The order shows placed, confirmed, pickup, preparation, delivery, and delivered stages.
+AG-022 | User Story | Provider | update order status | customers receive accurate progress information | Critical | 8 | Sprint 2 | Only valid next-status actions are available and updates appear in realtime.
+AG-023 | User Story | Provider | set an estimated delivery time | customers know when to expect the order | High | 3 | Sprint 2 | ETA is saved per order and displayed on customer order details.
+AG-024 | User Story | Provider | view the delivery point and open directions | I can navigate to the customer | Critical | 5 | Sprint 2 | Delivery coordinates appear on a map and can open Google Maps.
+AG-025 | User Story | Provider | see active deliveries on a dashboard map | I can coordinate outstanding orders | High | 5 | Sprint 2 | Active orders appear as status-based map markers.
+AG-026 | User Story | Customer | cancel an eligible COD order | I can correct an order before fulfillment progresses too far | High | 5 | Sprint 2 | COD cancellation is allowed only through the configured cutoff status.
+AG-027 | User Story | Customer | rate and review a completed order | I can share feedback about the provider | Medium | 5 | Sprint 2 | Only delivered orders accept one rating/review and the store aggregate updates.
+AG-028 | User Story | Customer | reorder a delivered purchase | I can repeat common orders quickly | Medium | 5 | Sprint 2 | Reorder opens the provider and preloads currently available products and quantities.
+AG-029 | UX Improvement | Customer | use a responsive bottom navigation | key destinations remain reachable on mobile screens | High | 3 | Sprint 2 | Browse, cart, orders, and profile are visible and correctly linked.
+
+========================================================================================================================
+SPRINT 3 — PAYMENTS, SAVED LOCATIONS, AND PRODUCT MEDIA
+========================================================================================================================
+
+AG-030 | Epic | Product Owner | add secure online payments | customers can pay digitally while providers receive confirmed orders only | Critical | 21 | Sprint 3 | Payment creation, confirmation webhook, pending state, retry, and cancellation rules operate correctly.
+AG-031 | User Story | Customer | select QR Ph at checkout | I can pay through a supported banking or wallet app | Critical | 8 | Sprint 3 | QR Ph creates a pending order and returns payment instructions from PayMongo.
+AG-032 | Technical Story | System | keep PayMongo credentials server-side | payment secrets are not exposed to browsers | Critical | 5 | Sprint 3 | Public clients call server routes and never receive secret API keys.
+AG-033 | Technical Story | System | process PayMongo webhook events | paid orders become available to providers automatically | Critical | 8 | Sprint 3 | Verified successful payment changes pending_payment to placed.
+AG-034 | Business Rule | Product Owner | hide unpaid orders from providers | providers do not fulfill ghost orders | Critical | 3 | Sprint 3 | Provider queries exclude pending_payment orders until confirmation.
+AG-035 | User Story | Customer | retry an incomplete QR Ph payment | I can complete payment if the original session expires | High | 5 | Sprint 3 | Pending order detail can request a new valid PayMongo payment session.
+AG-036 | User Story | Customer | cancel an unpaid QR Ph order | abandoned payment attempts do not remain active | High | 3 | Sprint 3 | Pending payments can be cancelled; paid orders are locked from customer cancellation.
+AG-037 | Reliability Improvement | System | remove orphaned orders after payment setup fails | customers and providers do not see invalid orders | High | 3 | Sprint 3 | Failed payment creation deletes the inserted order and its items before reporting an error.
+AG-038 | User Story | Customer | save delivery addresses | I can reuse common delivery locations | High | 8 | Sprint 3 | Customer can save, select, and delete addresses with coordinates.
+AG-039 | User Story | Customer | categorize saved addresses | I can distinguish Home, Work, Partner's House, and Other | Medium | 3 | Sprint 3 | Each saved address stores and displays its selected category.
+AG-040 | User Story | Provider | upload product photos | customers can recognize products before ordering | Medium | 5 | Sprint 3 | Images upload to Supabase Storage and display in the product catalog with a fallback.
+AG-041 | Improvement | Provider | see the correct payment method | I can handle COD and QR Ph orders correctly | High | 2 | Sprint 3 | Order detail accurately displays Cash on Delivery or QR Ph and payment status.
+
+========================================================================================================================
+SPRINT 4 — BATCH DELIVERY, LOCATION FILTERING, THEME, AND VOICE
+========================================================================================================================
+
+AG-042 | Epic | Provider | group orders into scheduled deliveries | I can reduce delivery costs and serve customers efficiently | High | 21 | Sprint 4 | Providers manage recurring slots and customers can choose eligible free batch delivery.
+AG-043 | User Story | Provider | create recurring batch slots | customers can book scheduled free delivery | High | 8 | Sprint 4 | Slot stores weekday, time, capacity, cutoff, and active status.
+AG-044 | User Story | Provider | pause or reactivate a slot | I can control future batch availability without deleting it | Medium | 3 | Sprint 4 | Active state changes persist and paused slots are unavailable at checkout.
+AG-045 | User Story | Provider | inspect orders assigned to a slot | I can prepare a complete delivery batch | High | 5 | Sprint 4 | Expanded slot shows customer, address, items, schedule, and order status.
+AG-046 | User Story | Provider | dispatch eligible batch orders together | I can start a batch route with one action | High | 5 | Sprint 4 | Dispatch changes placed, confirmed, and preparing orders to out_for_delivery.
+AG-047 | User Story | Customer | select a batch slot | I can receive free delivery at a scheduled time | High | 8 | Sprint 4 | Checkout lists upcoming active slots, disables passed cutoffs, and charges zero delivery fee.
+AG-048 | User Story | Customer | see only stores within 15 km | I can order from serviceable providers | Critical | 8 | Sprint 4 | Distance is calculated from customer coordinates and only pinned stores within radius appear.
+AG-049 | User Story | Customer | use GPS, cached location, or a saved address for discovery | nearby-store results work with my preferred location source | High | 5 | Sprint 4 | Sources are applied in the documented priority and stores sort nearest-first.
+AG-050 | Business Rule | System | validate locations within the Philippines and service radius | invalid deliveries are prevented | Critical | 5 | Sprint 4 | Pins outside Philippine bounds or farther than 15 km from the store are rejected.
+AG-051 | User Story | User | switch between light and dark themes | I can use the site comfortably in different environments | Medium | 5 | Sprint 4 | Theme applies across customer UI and persists between visits.
+AG-052 | User Story | Customer | dictate an AquaBot message | I can use the assistant hands-free | Low | 3 | Sprint 4 | Supported browsers provide en-PH speech recognition and insert the transcript.
+
+========================================================================================================================
+SPRINT 5 — AI, PROVIDER OPERATIONS, SECURITY, AND LEGAL
+========================================================================================================================
+
+AG-053 | Epic | Product Owner | improve platform intelligence and operational controls | users receive reliable assistance and providers manage the business efficiently | High | 21 | Sprint 5 | Customer and provider AI tools, operational analytics, tutorials, and resilience features are available.
+AG-054 | Technical Improvement | AquaBot | fall back across valid Gemini models | assistance continues during rate limits or model failures | High | 5 | Sprint 5 | Invalid or rate-limited models are skipped and a supported fallback is attempted.
+AG-055 | User Story | Provider | ask an AI assistant about orders, products, and revenue | I can understand store activity quickly | Medium | 8 | Sprint 5 | Assistant receives live store context and answers operational questions.
+AG-056 | User Story | Provider | listen to assistant responses | I can consume insights while working | Low | 3 | Sprint 5 | Text-to-speech can play and stop individual provider-assistant replies.
+AG-057 | User Story | New Provider | view an onboarding tutorial | I can learn the portal without training | Medium | 5 | Sprint 5 | First visit shows an eight-step tutorial and completion persists locally.
+AG-058 | User Story | Provider | view delivery operations on a dedicated map | I can coordinate current routes | High | 8 | Sprint 5 | Delivery-map page shows eligible active orders and opens order details.
+AG-059 | User Story | Provider | automatically open and close my store | published availability follows business hours | High | 5 | Sprint 5 | Provider can enable a schedule and save valid opening and closing times.
+AG-060 | User Story | Provider | view seven-day or thirty-day revenue | I can evaluate store performance | Medium | 5 | Sprint 5 | Revenue chart uses non-cancelled orders and switches between supported periods.
+AG-061 | User Story | Provider | hide or show all products | I can update catalog availability quickly | Medium | 3 | Sprint 5 | Bulk action changes every product's availability and provides pending/error feedback.
+AG-062 | User Story | Provider | export filtered orders | I can use order data outside AquaGas | Medium | 3 | Sprint 5 | Export contains the currently filtered orders with identifiers, customer, status, payment, delivery, total, and date.
+AG-063 | Security Improvement | Customer | be signed out after inactivity | unattended sessions do not stay open indefinitely | High | 5 | Sprint 5 | Timeout warning allows continuation or signs the customer out securely.
+AG-064 | Reliability Improvement | Customer | see when the service is offline | I understand why live data is unavailable | Medium | 3 | Sprint 5 | Offline banner appears on connectivity loss without replacing cached content.
+AG-065 | Compliance Story | User | review Terms and Privacy information | I understand the platform rules and data use | High | 5 | Sprint 5 | Public legal pages are reachable and registration requires agreement.
+AG-066 | Public Content | Visitor | view an About page and public landing page | I can understand and verify AquaGas before signing in | Medium | 5 | Sprint 5 | Public pages identify AquaGas, explain the service, and link to authentication and legal pages.
+
+========================================================================================================================
+SPRINT 6 — ORDER CHAT, DELIVERY EVIDENCE, AND REALTIME RELIABILITY
+========================================================================================================================
+
+AG-067 | Epic | Product Owner | support direct order communication | customers and providers can resolve fulfillment questions inside AquaGas | Critical | 13 | Sprint 6 | Each order has a realtime role-aware conversation available to both parties.
+AG-068 | User Story | Customer | message the provider from an order | I can clarify delivery or product details | Critical | 5 | Sprint 6 | Customer can load and send messages associated only with the selected order.
+AG-069 | User Story | Provider | message the customer from an order | I can coordinate pickup and delivery | Critical | 5 | Sprint 6 | Provider can load and send messages associated only with the selected order.
+AG-070 | User Story | Conversation Participant | see sent, delivered, and seen state | I know whether the other party received my message | High | 5 | Sprint 6 | Latest outgoing messages display state based on realtime presence and is_read.
+AG-071 | User Story | Conversation Participant | see online and typing indicators | conversations feel responsive | Medium | 3 | Sprint 6 | Presence and typing events update without storing typing messages.
+AG-072 | Business Rule | Product Owner | close chat after delivery or cancellation | completed orders cannot receive new operational messages | Medium | 3 | Sprint 6 | History remains visible but the input is disabled for terminal orders.
+AG-073 | Reliability Improvement | System | prevent duplicated realtime messages | conversation history remains accurate | High | 3 | Sprint 6 | Insert subscription deduplicates messages already returned by the send operation.
+AG-074 | User Story | Provider | attach proof of delivery | order completion can be supported by delivery evidence | High | 5 | Sprint 6 | Provider order completion accepts proof data and customer order detail displays it.
+
+========================================================================================================================
+SPRINT 7 — PUBLIC WEBSITE AND NAVIGATION POLISH
+========================================================================================================================
+
+AG-075 | Epic | Product Owner | modernize the public AquaGas experience | visitors understand the service and can reach key actions easily | Medium | 13 | Sprint 7 | Landing, About, legal, navigation, and responsive presentation use a consistent design.
+AG-076 | UX Improvement | Visitor | see a clear landing page | I understand what AquaGas provides immediately | High | 5 | Sprint 7 | Hero content, calls to action, benefits, and service explanation are clearly visible.
+AG-077 | UX Improvement | Visitor | understand how AquaGas works | I know the ordering process before registering | Medium | 3 | Sprint 7 | A dedicated step-based section explains discovery, ordering, and delivery.
+AG-078 | Technical Improvement | Developer | reuse public header and footer components | public pages remain consistent and maintainable | Medium | 3 | Sprint 7 | Landing, About, Terms, Privacy, and Changelog share common navigation components.
+AG-079 | UX Improvement | User | use consistent back navigation | I can return from nested pages predictably | High | 3 | Sprint 7 | Checkout, store, customer order, and provider order pages use the shared BackLink component.
+AG-080 | UX Improvement | Mobile Customer | use an improved bottom navigation | primary destinations remain readable and aligned | High | 3 | Sprint 7 | Mobile navigation labels, icons, spacing, and safe-area behavior are consistent.
+AG-081 | UX Improvement | Customer | use AquaBot comfortably on small screens | chat remains readable and controllable on mobile layouts | Medium | 3 | Sprint 7 | Chat panel, controls, and open/close behavior fit supported mobile viewport sizes.
+
+========================================================================================================================
+BACKLOG SUMMARY
+========================================================================================================================
+
+Total backlog items: 81
+Completed release sprints represented: 7
+Statuses represented: Done
+Primary roles: Customer, Provider, Administrator, Visitor, Product Owner, System, Developer
+Item types: Epic, User Story, Technical Story, Technical Improvement, Reliability Improvement, Security Improvement, UX Improvement, Business Rule, Compliance Story, Public Content
+
+Priority interpretation:
+Critical = authentication, ordering, payment, fulfillment, security, or messaging required for core operation
+High     = important operational or customer-facing workflow
+Medium   = valuable enhancement, reporting, usability, or maintainability feature
+Low      = optional convenience or secondary interaction
+
+Story point scale:
+2 = very small change
+3 = small feature or targeted improvement
+5 = normal feature
+8 = large or integration-heavy feature
+13/21 = epic spanning multiple stories
+
