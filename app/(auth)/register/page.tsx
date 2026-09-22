@@ -57,6 +57,10 @@ export default function RegisterPage() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    if (!/^09\d{9}$/.test(phone)) {
+      setError('Enter an 11-digit mobile number starting with 09, for example 09690415138.')
+      return
+    }
     if (!agreedTerms || !agreedPrivacy) {
       setError('You must agree to the Terms & Conditions and Privacy Policy.')
       return
@@ -153,7 +157,21 @@ export default function RegisterPage() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Phone Number</label>
-            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="09xxxxxxxxx" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-water-300 placeholder:text-gray-400" />
+            <input
+              type="tel"
+              value={phone}
+              onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+              placeholder="09690415138"
+              inputMode="numeric"
+              autoComplete="tel-national"
+              minLength={11}
+              maxLength={11}
+              pattern="09[0-9]{9}"
+              required
+              aria-describedby="phone-format"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-water-300 placeholder:text-gray-400"
+            />
+            <p id="phone-format" className="mt-1.5 text-xs text-gray-500">Use exactly 11 digits starting with 09.</p>
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Email</label>

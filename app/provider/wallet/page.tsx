@@ -5,7 +5,7 @@ import { useProvider } from '@/lib/provider-context'
 import { supabase } from '@/lib/supabase'
 import { ArrowDownToLine, CheckCircle2, Clock3, Landmark, Loader2, QrCode, RefreshCw, ShieldCheck, WalletCards } from 'lucide-react'
 
-type Payout = { id: string; amount: number; status: 'requested' | 'processing' | 'completed' | 'rejected'; requested_at: string; processed_at: string | null; reference_number: string | null; admin_note: string | null }
+type Payout = { id: string; amount: number; status: 'requested' | 'processing' | 'completed' | 'rejected'; requested_at: string; processed_at: string | null; reference_number: string | null; admin_note: string | null; payout_method: 'gcash' | 'bank' | null; account_name: string | null; account_number: string | null; bank_name: string | null }
 
 const peso = (value: number) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value)
 
@@ -16,13 +16,14 @@ export default function ProviderWalletPage() {
   const [loading, setLoading] = useState(true)
   const [requesting, setRequesting] = useState(false)
   const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
+  const [destination, setDestination] = useState({ method: 'gcash' as 'gcash' | 'bank', accountName: '', accountNumber: '', bankName: '' })
 
   async function loadWallet() {
     if (!store) return
     setLoading(true)
     const [settingsResult, payoutsResult] = await Promise.all([
       supabase.from('platform_settings').select('commission_rate').eq('id', 1).maybeSingle(),
-      supabase.from('provider_payouts').select('id, amount, status, requested_at, processed_at, reference_number, admin_note').eq('provider_id', store.id).order('requested_at', { ascending: false }),
+      supabase.from('provider_payouts').select('id, amount, status, requested_at, processed_at, reference_number, admin_note, payout_method, account_name, account_number, bank_name').eq('provider_id', store.id).order('requested_at', { ascending: false }),
     ])
     if (settingsResult.data?.commission_rate != null) setCommissionRate(Number(settingsResult.data.commission_rate))
     if (payoutsResult.error) setMessage({ tone: 'error', text: 'Wallet records could not be loaded. Apply the latest database migration, then refresh.' })
@@ -44,8 +45,12 @@ export default function ProviderWalletPage() {
 
   async function requestPayout() {
     if (wallet.available <= 0 || requesting) return
+    if (!destination.accountName.trim() || !destination.accountNumber.trim() || (destination.method === 'bank' && !destination.bankName.trim())) {
+      setMessage({ tone: 'error', text: 'Complete the payout destination before requesting a payout.' })
+      return
+    }
     setRequesting(true); setMessage(null)
-    const { error } = await supabase.rpc('request_provider_payout')
+    const { error } = await supabase.rpc('request_provider_payout', { p_payout_method: destination.method, p_account_name: destination.accountName.trim(), p_account_number: destination.accountNumber.trim(), p_bank_name: destination.method === 'bank' ? destination.bankName.trim() : null })
     if (error) setMessage({ tone: 'error', text: error.message || 'Payout request failed. Please try again.' })
     else { setMessage({ tone: 'success', text: 'Payout requested. AquaGas can now review and send your funds.' }); await loadWallet() }
     setRequesting(false)
@@ -62,13 +67,24 @@ export default function ProviderWalletPage() {
     <section className="overflow-hidden rounded-[2rem] bg-gray-950 text-white shadow-xl shadow-gray-300/30 dark:border dark:border-gray-800">
       <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.4fr_1fr] lg:p-10">
         <div><div className="flex items-center gap-2 text-sm font-bold text-blue-300"><WalletCards className="h-5 w-5" />Available for payout</div><p className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">{loading ? '—' : peso(wallet.available)}</p><p className="mt-3 max-w-xl text-sm leading-6 text-gray-400">Delivered QR Ph earnings after the {commissionRate}% AquaGas commission and previous payout requests.</p></div>
-        <div className="flex flex-col justify-end"><button onClick={requestPayout} disabled={loading || requesting || wallet.available <= 0} className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 font-black text-gray-950 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:bg-gray-800 disabled:text-gray-500">{requesting ? <Loader2 className="h-5 w-5 animate-spin" /> : <ArrowDownToLine className="h-5 w-5" />}{requesting ? 'Requesting…' : 'Request full payout'}</button><p className="mt-3 text-center text-xs text-gray-500">One request covers your complete available balance.</p></div>
+        <div className="flex flex-col justify-end"><p className="text-sm font-bold text-white">Request your full available balance</p><p className="mt-2 text-sm leading-6 text-gray-400">Choose where AquaGas should send the funds, then submit the payout request below.</p></div>
       </div>
       <div className="grid border-t border-white/10 sm:grid-cols-3">
         <WalletMetric icon={<Clock3 />} label="Pending delivery" value={peso(wallet.pending)} note="Paid orders not delivered yet" />
         <WalletMetric icon={<Landmark />} label="Paid out" value={peso(wallet.completed)} note="Completed provider payouts" />
         <WalletMetric icon={<ShieldCheck />} label="Platform fee" value={peso(wallet.platformFee)} note={`${commissionRate}% of delivered QR Ph sales`} />
       </div>
+    </section>
+
+    <section className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900 sm:p-6">
+      <div><h2 className="text-lg font-bold text-gray-900 dark:text-white">Payout destination</h2><p className="mt-1 text-sm text-gray-500">These details are saved with this request and shown only to payout administrators.</p></div>
+      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <label className="text-xs font-bold text-gray-600 dark:text-gray-300">Transfer method<select value={destination.method} onChange={event => setDestination(value => ({ ...value, method: event.target.value as 'gcash' | 'bank' }))} className="mt-1 h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950"><option value="gcash">GCash</option><option value="bank">Bank transfer</option></select></label>
+        {destination.method === 'bank' && <label className="text-xs font-bold text-gray-600 dark:text-gray-300">Bank name<input value={destination.bankName} onChange={event => setDestination(value => ({ ...value, bankName: event.target.value }))} placeholder="Bank name" className="mt-1 h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950" /></label>}
+        <label className="text-xs font-bold text-gray-600 dark:text-gray-300">Account name<input value={destination.accountName} onChange={event => setDestination(value => ({ ...value, accountName: event.target.value }))} placeholder="Name registered to the account" className="mt-1 h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950" /></label>
+        <label className="text-xs font-bold text-gray-600 dark:text-gray-300">{destination.method === 'gcash' ? 'GCash number' : 'Account number'}<input value={destination.accountNumber} onChange={event => setDestination(value => ({ ...value, accountNumber: event.target.value }))} inputMode="numeric" placeholder={destination.method === 'gcash' ? '09XXXXXXXXX' : 'Account number'} className="mt-1 h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950" /></label>
+      </div>
+      <button onClick={requestPayout} disabled={loading || requesting || wallet.available <= 0} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-water-600 px-5 font-bold text-white transition-colors hover:bg-water-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">{requesting ? <Loader2 className="h-5 w-5 animate-spin" /> : <ArrowDownToLine className="h-5 w-5" />}{requesting ? 'Requesting…' : `Request ${peso(wallet.available)}`}</button>
     </section>
 
     <section>

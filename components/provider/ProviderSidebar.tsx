@@ -4,13 +4,14 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, ShoppingBag, Package, Settings,
-  Droplets, LogOut, Menu, X, Flame, CalendarClock, Map, WalletCards, BarChart3,
+  Droplets, LogOut, Menu, X, Flame, CalendarClock, Map, WalletCards, BarChart3, Moon, Sun,
 } from 'lucide-react'
 import { useProvider } from '@/lib/provider-context'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { ChatNotifications } from '@/components/ChatNotifications'
+import { useTheme } from '@/lib/theme-context'
 
 const NAV = [
   { href: '/provider/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -29,12 +30,7 @@ export function ProviderSidebar() {
   const router = useRouter()
   const { user } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
-
-  useEffect(() => {
-    localStorage.removeItem('aq-theme')
-    document.documentElement.classList.remove('dark')
-    document.documentElement.removeAttribute('data-theme')
-  }, [])
+  const { theme, setTheme } = useTheme()
 
   const [seenOrderIds, setSeenOrderIds] = useState<string[]>([])
   const placedOrderIds = orders.filter(o => o.status === 'placed').map(o => o.id)
@@ -84,6 +80,9 @@ export function ProviderSidebar() {
           <span className="truncate font-bold text-sm text-gray-900">{store?.store_name || 'Provider'}</span>
         </div>
         <div className="flex items-center">
+          <button type="button" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-gray-700 hover:bg-gray-50" aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
           {user && <ChatNotifications userId={user.id} role="provider" orderIds={orders.map(order => order.id)} />}
           <button onClick={() => setMobileOpen(o => !o)} className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl hover:bg-gray-50" aria-label={mobileOpen ? 'Close provider navigation' : 'Open provider navigation'} aria-expanded={mobileOpen}>
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -155,6 +154,10 @@ export function ProviderSidebar() {
 
         {/* Logout */}
         <div className="space-y-1 border-t border-gray-100 p-3">
+          <button type="button" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="hidden min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-900 md:flex">
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          </button>
           <button
             onClick={handleLogout}
             className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-50 hover:text-red-600"

@@ -1,23 +1,19 @@
 'use client'
 
 import Link from 'next/link'
-import { ShoppingCart, User, Menu, X } from 'lucide-react'
+import { ShoppingCart, User, Menu, X, Moon, Sun } from 'lucide-react'
 import { useCart } from '@/lib/cart-context'
 import { useAuth } from '@/lib/auth-context'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { NotificationOverlay } from '@/components/customer/NotificationOverlay'
 import { ChatNotifications } from '@/components/ChatNotifications'
+import { useTheme } from '@/lib/theme-context'
 
 export function Navbar() {
   const { totalItems } = useCart()
   const { user } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
-
-  useEffect(() => {
-    localStorage.removeItem('aq-theme')
-    document.documentElement.classList.remove('dark')
-    document.documentElement.removeAttribute('data-theme')
-  }, [])
+  const { theme, setTheme } = useTheme()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white shadow-sm">
@@ -39,6 +35,9 @@ export function Navbar() {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-gray-700 transition-colors hover:bg-gray-50" aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} title={`${theme === 'dark' ? 'Light' : 'Dark'} mode`}>
+            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
           {user && <NotificationOverlay userId={user.id} />}
           {user && <ChatNotifications userId={user.id} role="customer" />}
 

@@ -50,6 +50,7 @@ export default function OrderDetailPage() {
   const [retryError, setRetryError] = useState('')
   const [retryQrUrl, setRetryQrUrl] = useState<string | null>(null)
   const [confirmingContainers, setConfirmingContainers] = useState(false)
+  const [containersError, setContainersError] = useState('')
 
   const [review, setReview] = useState<Review | null>(null)
   const [reviewRating, setReviewRating] = useState(0)
@@ -133,9 +134,19 @@ export default function OrderDetailPage() {
   async function confirmContainersOutside() {
     if (!order || !user || order.containers_ready_at) return
     setConfirmingContainers(true)
-    const confirmedAt = new Date().toISOString()
-    const { error } = await supabase.from('orders').update({ containers_ready_at: confirmedAt } as any).eq('id', order.id).eq('customer_id', user.id)
-    if (!error) setOrder(current => current ? { ...current, containers_ready_at: confirmedAt } : current)
+    setContainersError('')
+
+    const { data, error } = await supabase.rpc('confirm_order_containers_ready', {
+      p_order_id: order.id,
+    })
+
+    if (error) {
+      setContainersError(error.message || 'Could not notify the provider. Please try again.')
+    } else {
+      const confirmedAt = typeof data === 'string' ? data : new Date().toISOString()
+      setOrder(current => current ? { ...current, containers_ready_at: confirmedAt } : current)
+    }
+
     setConfirmingContainers(false)
   }
 
@@ -361,6 +372,7 @@ export default function OrderDetailPage() {
                 <h2 className="font-bold text-gray-900">{order.containers_ready_at ? 'Ready for pickup' : order.service_type === 'lpg' ? 'Place your empty cylinder outside' : 'Place your empty gallons outside'}</h2>
                 <p className="mt-1 text-sm text-gray-600">{order.containers_ready_at ? 'The provider has been notified and can now mark the containers as picked up.' : 'Confirm only after the containers are in a safe, accessible pickup location.'}</p>
                 {!order.containers_ready_at && <button type="button" onClick={confirmContainersOutside} disabled={confirmingContainers} className="mt-4 min-h-11 rounded-xl bg-purple-600 px-4 text-sm font-bold text-white hover:bg-purple-700 disabled:opacity-60">{confirmingContainers ? 'Confirming…' : order.service_type === 'lpg' ? 'Cylinder is outside' : 'Gallons are outside'}</button>}
+                {containersError && <p role="alert" className="mt-3 text-sm font-semibold text-red-700">{containersError}</p>}
               </div>
             </div>
           </div>

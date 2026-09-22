@@ -102,6 +102,8 @@
 /* ─── Dark mode: raw Tailwind color overrides ─── */
 [data-theme="dark"] .bg-white        { background-color: hsl(222 47% 11%) !important; }
 [data-theme="dark"] .bg-white\/80    { background-color: hsl(222 47% 9% / 0.85) !important; }
+[data-theme="dark"] .bg-white\/95    { background-color: hsl(222 47% 9% / 0.96) !important; }
+[data-theme="dark"] .bg-white\/60    { background-color: hsl(222 47% 12% / 0.86) !important; }
 [data-theme="dark"] .bg-gray-50      { background-color: hsl(222 47% 14%) !important; }
 [data-theme="dark"] .bg-gray-100     { background-color: hsl(222 47% 17%) !important; }
 [data-theme="dark"] .bg-gray-200     { background-color: hsl(222 47% 20%) !important; }
@@ -109,14 +111,16 @@
 [data-theme="dark"] .border-gray-50  { border-color: hsl(217 33% 17%) !important; }
 [data-theme="dark"] .border-gray-100 { border-color: hsl(217 33% 20%) !important; }
 [data-theme="dark"] .border-gray-200 { border-color: hsl(217 33% 24%) !important; }
+[data-theme="dark"] .border-gray-300 { border-color: hsl(217 25% 32%) !important; }
 
+[data-theme="dark"] .text-gray-950   { color: hsl(210 40% 98%) !important; }
 [data-theme="dark"] .text-gray-900   { color: hsl(210 40% 96%) !important; }
 [data-theme="dark"] .text-gray-800   { color: hsl(210 35% 88%) !important; }
 [data-theme="dark"] .text-gray-700   { color: hsl(210 30% 80%) !important; }
-[data-theme="dark"] .text-gray-600   { color: hsl(210 20% 70%) !important; }
-[data-theme="dark"] .text-gray-500   { color: hsl(215 15% 55%) !important; }
-[data-theme="dark"] .text-gray-400   { color: hsl(215 12% 45%) !important; }
-[data-theme="dark"] .text-gray-300   { color: hsl(215 10% 35%) !important; }
+[data-theme="dark"] .text-gray-600   { color: hsl(210 20% 74%) !important; }
+[data-theme="dark"] .text-gray-500   { color: hsl(215 18% 68%) !important; }
+[data-theme="dark"] .text-gray-400   { color: hsl(215 18% 72%) !important; }
+[data-theme="dark"] .text-gray-300   { color: hsl(215 20% 80%) !important; }
 
 /* Inputs & textareas */
 [data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
@@ -127,7 +131,7 @@
   color: hsl(210 40% 96%) !important;
 }
 [data-theme="dark"] input::placeholder,
-[data-theme="dark"] textarea::placeholder { color: hsl(215 12% 40%) !important; }
+[data-theme="dark"] textarea::placeholder { color: hsl(215 16% 62%) !important; opacity: 1; }
 
 /* Navbar */
 [data-theme="dark"] header.sticky { background-color: hsl(222 47% 9%) !important; border-color: hsl(217 33% 18%) !important; }
@@ -147,12 +151,61 @@
 
 /* Green states */
 [data-theme="dark"] .bg-green-50  { background-color: hsl(140 30% 12%) !important; }
+[data-theme="dark"] .bg-green-100 { background-color: hsl(140 30% 17%) !important; }
 [data-theme="dark"] .border-green-100 { border-color: hsl(140 30% 20%) !important; }
+[data-theme="dark"] .border-green-200 { border-color: hsl(140 28% 28%) !important; }
+[data-theme="dark"] .text-green-600,
+[data-theme="dark"] .text-green-700 { color: hsl(142 69% 70%) !important; }
 
 /* Blue/water states */
 [data-theme="dark"] .bg-blue-50   { background-color: hsl(213 40% 14%) !important; }
+[data-theme="dark"] .bg-blue-100  { background-color: hsl(213 40% 19%) !important; }
+[data-theme="dark"] .bg-water-50  { background-color: hsl(201 55% 14%) !important; }
+[data-theme="dark"] .bg-water-100 { background-color: hsl(201 50% 19%) !important; }
+[data-theme="dark"] .border-water-100,
+[data-theme="dark"] .border-water-200 { border-color: hsl(201 45% 27%) !important; }
+[data-theme="dark"] .text-water-600,
+[data-theme="dark"] .text-water-700,
+[data-theme="dark"] .text-water-800 { color: hsl(198 93% 68%) !important; }
+[data-theme="dark"] .text-blue-600,
+[data-theme="dark"] .text-blue-700 { color: hsl(213 94% 75%) !important; }
 [data-theme="dark"] .bg-pink-50   { background-color: hsl(330 35% 14%) !important; }
 [data-theme="dark"] .bg-amber-50  { background-color: hsl(38 40% 14%) !important; }
+[data-theme="dark"] .bg-amber-100 { background-color: hsl(38 40% 19%) !important; }
+[data-theme="dark"] .border-amber-100,
+[data-theme="dark"] .border-amber-200 { border-color: hsl(38 40% 28%) !important; }
+[data-theme="dark"] .text-amber-600,
+[data-theme="dark"] .text-amber-700,
+[data-theme="dark"] .text-amber-800 { color: hsl(45 93% 70%) !important; }
+[data-theme="dark"] .bg-red-50 { background-color: hsl(0 38% 14%) !important; }
+[data-theme="dark"] .bg-red-100 { background-color: hsl(0 38% 19%) !important; }
+[data-theme="dark"] .border-red-200 { border-color: hsl(0 38% 28%) !important; }
+[data-theme="dark"] .text-red-600,
+[data-theme="dark"] .text-red-700 { color: hsl(0 91% 76%) !important; }
+[data-theme="dark"] .bg-orange-50,
+[data-theme="dark"] .bg-lpg-50 { background-color: hsl(24 42% 14%) !important; }
+[data-theme="dark"] .bg-lpg-100 { background-color: hsl(24 42% 19%) !important; }
+[data-theme="dark"] .text-orange-600,
+[data-theme="dark"] .text-orange-700,
+[data-theme="dark"] .text-lpg-600,
+[data-theme="dark"] .text-lpg-700 { color: hsl(27 96% 72%) !important; }
+[data-theme="dark"] .bg-yellow-50 { background-color: hsl(48 42% 13%) !important; }
+[data-theme="dark"] .text-yellow-700 { color: hsl(48 96% 70%) !important; }
+[data-theme="dark"] .bg-indigo-50,
+[data-theme="dark"] .bg-indigo-100 { background-color: hsl(235 38% 17%) !important; }
+[data-theme="dark"] .border-indigo-200 { border-color: hsl(235 38% 30%) !important; }
+[data-theme="dark"] .text-indigo-600,
+[data-theme="dark"] .text-indigo-700 { color: hsl(234 95% 78%) !important; }
+[data-theme="dark"] .bg-purple-50 { background-color: hsl(270 35% 16%) !important; }
+[data-theme="dark"] .text-purple-600,
+[data-theme="dark"] .text-purple-700 { color: hsl(270 95% 80%) !important; }
+[data-theme="dark"] .bg-cyan-50 { background-color: hsl(188 42% 14%) !important; }
+[data-theme="dark"] .text-cyan-600,
+[data-theme="dark"] .text-cyan-700 { color: hsl(187 92% 70%) !important; }
+
+[data-theme="dark"] option { background-color: hsl(222 47% 11%); color: hsl(210 40% 96%); }
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: hsl(217 25% 30%); }
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: hsl(217 25% 40%); }
 
 /* Mobile menu dropdown */
 [data-theme="dark"] header .md\:hidden.border-t { background-color: hsl(222 47% 10%) !important; border-color: hsl(217 33% 18%) !important; }

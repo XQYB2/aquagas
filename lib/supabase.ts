@@ -128,6 +128,10 @@ export type Database = {
       }
     }
     Functions: {
+      confirm_order_containers_ready: {
+        Args: { p_order_id: string }
+        Returns: string
+      }
       create_order_with_inventory: {
         Args: {
           p_provider_id: string
