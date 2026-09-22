@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { authenticatedJsonHeaders } from '@/lib/authenticated-fetch'
 import { useAuth } from '@/lib/auth-context'
 import { StatusStepper, StatusBadge } from '@/components/customer/StatusBadge'
-import { MapPin, Phone, Banknote, AlertCircle, Star, CalendarClock, Truck, Camera } from 'lucide-react'
+import { MapPin, Phone, Banknote, AlertCircle, Star, CalendarClock, Truck, Camera, Package, XCircle, LockKeyhole, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 import { OrderChat } from '@/components/OrderChat'
 import { BackLink } from '@/components/navigation/BackLink'
@@ -71,7 +71,7 @@ export default function OrderDetailPage() {
 
       const { data: items } = await supabase
         .from('order_items')
-        .select('id, quantity, unit_price, products(name)')
+        .select('id, product_name, quantity, unit_price, products(name)')
         .eq('order_id', id)
 
       const op = o as any
@@ -94,7 +94,7 @@ export default function OrderDetailPage() {
         delivery_proof_url: op.delivery_proof_url || null,
         delivered_at: op.delivered_at || null,
         items: (items || []).map((i: any) => ({
-          id: i.id, product_name: i.products?.name || 'Item', quantity: i.quantity, unit_price: i.unit_price,
+          id: i.id, product_name: i.product_name || i.products?.name || 'Product unavailable', quantity: i.quantity, unit_price: i.unit_price,
         })),
       })
 
@@ -219,14 +219,14 @@ export default function OrderDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center text-gray-400">Loading…</div>
+      <div className="max-w-6xl mx-auto px-4 py-20 text-center text-gray-400">Loading…</div>
     )
   }
 
   if (!order) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <p className="text-5xl mb-4">📦</p>
+      <div className="max-w-6xl mx-auto px-4 py-20 text-center">
+        <Package className="mx-auto mb-4 h-12 w-12 text-gray-300" />
         <h2 className="text-xl font-bold mb-2">Order not found</h2>
         <Link href="/orders" className="text-water-500 hover:underline">View all orders</Link>
       </div>
@@ -234,12 +234,12 @@ export default function OrderDetailPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <BackLink href="/orders" label="Back to orders" variant="surface" iconOnly />
         <div>
-          <h1 className="text-lg font-bold text-gray-900">Order #{order.id.slice(-6).toUpperCase()}</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900">Order #{order.id.slice(-6).toUpperCase()}</h1>
           <p className="text-xs text-gray-400">
             {new Date(order.created_at).toLocaleDateString('en-PH', {
               weekday: 'long', month: 'long', day: 'numeric',
@@ -256,7 +256,7 @@ export default function OrderDetailPage() {
         {/* Cancelled banner */}
         {order.status === 'cancelled' && (
           <div className="bg-red-50 border border-red-100 rounded-2xl p-4 space-y-1">
-            <p className="text-red-600 font-semibold text-sm">❌ This order was cancelled.</p>
+            <p className="flex items-center gap-2 text-red-600 font-semibold text-sm"><XCircle className="h-4 w-4" /> This order was cancelled.</p>
             {order.cancel_reason && (
               <p className="text-red-500 text-xs">Reason: {order.cancel_reason}</p>
             )}
@@ -327,6 +327,18 @@ export default function OrderDetailPage() {
             </a>
           </div>
         </div>
+
+        {/* Keep direct store communication near the store details. */}
+        {user && order.status !== 'pending_payment' && order.status !== 'cancelled' && (
+          <OrderChat
+            orderId={order.id}
+            currentUserId={user.id}
+            currentRole="customer"
+            otherPartyName={order.provider_name}
+            orderStatus={order.status}
+            defaultOpen
+          />
+        )}
 
         {/* Delivery Address */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -436,9 +448,9 @@ export default function OrderDetailPage() {
           if (!canCancel) {
             return (
               <div className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-500 text-center">
-                {isQrPh
-                  ? '🔒 QR Ph payment confirmed — this order can no longer be cancelled. Contact the store if you have concerns.'
-                  : '🔒 Cannot cancel after gallons have been picked up.'}
+                <span className="inline-flex items-center justify-center gap-2"><LockKeyhole className="h-4 w-4 shrink-0" />{isQrPh
+                  ? 'QR Ph payment confirmed — this order can no longer be cancelled. Contact the store if you have concerns.'
+                  : 'Cannot cancel after gallons have been picked up.'}</span>
               </div>
             )
           }
@@ -476,7 +488,7 @@ export default function OrderDetailPage() {
 
         {order.status === 'delivered' && (
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <p className="text-green-700 font-semibold text-sm mb-4">✅ Order Delivered — Thank you!</p>
+            <p className="flex items-center gap-2 text-green-700 font-semibold text-sm mb-4"><CheckCircle2 className="h-4 w-4" /> Order Delivered — Thank you!</p>
 
             {review ? (
               <div>
@@ -520,16 +532,6 @@ export default function OrderDetailPage() {
               </div>
             )}
           </div>
-        )}
-        {/* Chat with provider */}
-        {user && order.status !== 'pending_payment' && order.status !== 'cancelled' && (
-          <OrderChat
-            orderId={order.id}
-            currentUserId={user.id}
-            currentRole="customer"
-            otherPartyName={order.provider_name}
-            orderStatus={order.status}
-          />
         )}
       </div>
       {retryQrUrl && (

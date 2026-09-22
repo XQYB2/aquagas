@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 // ── Status Badges ───────────────────────────────────────────────────
 
 type ProviderStatus = 'pending' | 'active' | 'suspended'
-type OrderStatus = 'placed' | 'confirmed' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled'
+type OrderStatus = 'placed' | 'confirmed' | 'awaiting_pickup' | 'picked_up' | 'being_prepared' | 'out_for_delivery' | 'delivered' | 'cancelled'
 type CustomerStatus = 'active' | 'suspended'
 
 const PROVIDER_STATUS: Record<ProviderStatus, string> = {
@@ -27,13 +27,15 @@ export function ProviderStatusBadge({ status }: { status: ProviderStatus }) {
 const ORDER_STATUS: Record<OrderStatus, string> = {
   placed:           'bg-blue-50 text-blue-700',
   confirmed:        'bg-indigo-50 text-indigo-700',
-  preparing:        'bg-yellow-50 text-yellow-700',
+  awaiting_pickup:  'bg-purple-50 text-purple-700',
+  picked_up:        'bg-cyan-50 text-cyan-700',
+  being_prepared:   'bg-yellow-50 text-yellow-700',
   out_for_delivery: 'bg-orange-50 text-orange-700',
   delivered:        'bg-green-50 text-green-700',
   cancelled:        'bg-red-50 text-red-600',
 }
 const ORDER_LABEL: Record<OrderStatus, string> = {
-  placed: 'New', confirmed: 'Confirmed', preparing: 'Preparing',
+  placed: 'New', confirmed: 'Confirmed', awaiting_pickup: 'Awaiting Pickup', picked_up: 'Picked Up', being_prepared: 'Preparing',
   out_for_delivery: 'On the Way', delivered: 'Delivered', cancelled: 'Cancelled',
 }
 

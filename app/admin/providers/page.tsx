@@ -10,6 +10,7 @@ import {
   ChevronDown, FileText,
 } from 'lucide-react'
 import type { AdminProvider } from '@/lib/admin-context'
+import { supabase } from '@/lib/supabase'
 
 type Tab = 'all' | 'pending' | 'active' | 'suspended'
 
@@ -20,6 +21,15 @@ export default function AdminProvidersPage() {
   const [selected, setSelected] = useState<AdminProvider | null>(null)
   const [actioning, setActioning] = useState<string | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [savingExpiry, setSavingExpiry] = useState(false)
+
+  async function saveExpiry() {
+    if (!selected) return
+    setSavingExpiry(true)
+    const { error } = await supabase.from('providers').update({ business_permit_expires_at: selected.business_permit_expires_at || null, owner_id_expires_at: selected.owner_id_expires_at || null }).eq('id', selected.id)
+    setSavingExpiry(false)
+    if (error) alert(error.message); else alert('Document expiry dates saved.')
+  }
 
   async function viewDocument(path: string) {
     const url = await getDocumentUrl(path)
@@ -278,6 +288,11 @@ export default function AdminProvidersPage() {
                     ) : <span className="text-xs text-gray-400">Not uploaded</span>}
                   </div>
                 </div>
+                <div className="mt-4 grid grid-cols-2 gap-3 border-t border-amber-100 pt-3">
+                  <label className="text-xs font-semibold text-amber-800">Permit expiry<input type="date" value={selected.business_permit_expires_at || ''} onChange={e=>setSelected(p=>p?{...p,business_permit_expires_at:e.target.value}:p)} className="mt-1 h-10 w-full rounded-lg border border-amber-200 bg-white px-2 text-sm text-gray-800"/></label>
+                  <label className="text-xs font-semibold text-amber-800">Owner ID expiry<input type="date" value={selected.owner_id_expires_at || ''} onChange={e=>setSelected(p=>p?{...p,owner_id_expires_at:e.target.value}:p)} className="mt-1 h-10 w-full rounded-lg border border-amber-200 bg-white px-2 text-sm text-gray-800"/></label>
+                </div>
+                <button onClick={saveExpiry} disabled={savingExpiry} className="mt-3 min-h-10 w-full rounded-lg bg-amber-700 px-3 text-xs font-bold text-white disabled:opacity-50">{savingExpiry?'Saving…':'Save expiry dates'}</button>
               </div>
 
               <p className="text-xs text-gray-400">

@@ -21,6 +21,8 @@ export type AdminProvider = {
   is_open: boolean
   business_permit_url: string | null
   owner_id_url: string | null
+  business_permit_expires_at: string | null
+  owner_id_expires_at: string | null
 }
 
 export type NewProviderInput = {
@@ -61,8 +63,9 @@ export type AdminOrder = {
   items_summary: string
   total_amount: number
   delivery_fee: number
-  status: 'placed' | 'confirmed' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled'
+  status: 'placed' | 'confirmed' | 'awaiting_pickup' | 'picked_up' | 'being_prepared' | 'out_for_delivery' | 'delivered' | 'cancelled'
   payment_method: string
+  payment_status: string
   delivery_address: string
   notes: string
   created_at: string
@@ -108,7 +111,7 @@ const AdminContext = createContext<AdminState & {
   suspendCustomer: (id: string) => void
   reactivateCustomer: (id: string) => void
   forceCancelOrder: (id: string, note: string) => void
-  updateSettings: (s: Partial<PlatformSettings>) => void
+  updateSettings: (s: Partial<PlatformSettings>) => Promise<void>
 }>({
   providers: [], customers: [], orders: [], settings: defaultPlatformSettings,
   isLoggedIn: false, loading: true,
@@ -117,7 +120,7 @@ const AdminContext = createContext<AdminState & {
   addProvider: async () => ({ success: false, error: 'Not initialized' }),
   getDocumentUrl: async () => null,
   suspendCustomer: () => {}, reactivateCustomer: () => {},
-  forceCancelOrder: () => {}, updateSettings: () => {},
+  forceCancelOrder: () => {}, updateSettings: async () => {},
 })
 
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
@@ -160,24 +163,28 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    const [providersRes, customersRes, ordersRes, settingsRes] = await Promise.all([
-      supabase.from('providers').select('*, profiles(full_name, phone)'),
-      supabase.from('profiles').select('*').eq('role', 'customer'),
-      supabase.from('orders').select('*, providers(store_name, service_type, delivery_fee), profiles(full_name, phone)').order('created_at', { ascending: false }),
-      supabase.from('platform_settings').select('*').eq('id', 1).single(),
-    ])
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { setState(s => ({ ...s, isLoggedIn: false, loading: false })); return }
+    const response = await fetch('/api/admin/data', { headers: { Authorization: `Bearer ${session.access_token}` }, cache: 'no-store' })
+    const payload = await response.json()
+    if (!response.ok) {
+      console.error('Admin data load failed:', payload.error)
+      setState(s => ({ ...s, isLoggedIn: true, loading: false }))
+      return
+    }
 
-    const providerRows = providersRes.data || []
-    const orderRows = ordersRes.data || []
+    const providerRows = payload.providers || []
+    const orderRows = payload.orders || []
+    const profileRows = payload.profiles || []
+    const profileById = new Map<string, any>(profileRows.map((profile: any) => [profile.id, profile]))
+    const providerById = new Map<string, any>(providerRows.map((provider: any) => [provider.id, provider]))
 
-    const orderIds = orderRows.map((o: any) => o.id)
-    const { data: allItems } = orderIds.length
-      ? await supabase.from('order_items').select('order_id, quantity, products(name)').in('order_id', orderIds)
-      : { data: [] as any[] }
+    const allItems = payload.orderItems || []
+    const productNames = new Map((payload.products || []).map((product: any) => [product.id, product.name]))
     const itemsSummaryByOrder: Record<string, string> = {}
     for (const o of orderRows as any[]) {
       const items = (allItems || []).filter((i: any) => i.order_id === o.id)
-      itemsSummaryByOrder[o.id] = items.map((i: any) => `${i.products?.name || 'Item'} ×${i.quantity}`).join(', ')
+      itemsSummaryByOrder[o.id] = items.map((i: any) => `${productNames.get(i.product_id) || 'Item'} ×${i.quantity}`).join(', ')
     }
 
     const providers: AdminProvider[] = providerRows.map((p: any) => {
@@ -185,12 +192,12 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       const revenue = providerOrders.filter((o: any) => o.status === 'delivered').reduce((s: number, o: any) => s + o.total_amount, 0)
       return {
         id: p.id,
-        owner_name: p.profiles?.full_name || 'Unknown',
+        owner_name: profileById.get(p.user_id)?.full_name || 'Unknown',
         owner_email: p.owner_email || '',
         store_name: p.store_name,
         service_type: p.service_type,
         address: p.address,
-        phone: p.profiles?.phone || '',
+        phone: profileById.get(p.user_id)?.phone || '',
         status: p.approval_status,
         date_registered: p.created_at,
         total_orders: providerOrders.length,
@@ -201,10 +208,18 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         is_open: p.is_open,
         business_permit_url: p.business_permit_url || null,
         owner_id_url: p.owner_id_url || null,
+        business_permit_expires_at: p.business_permit_expires_at || null,
+        owner_id_expires_at: p.owner_id_expires_at || null,
       }
     })
 
-    const customerRows = customersRes.data || []
+    const authById = new Map<string, any>((payload.authUsers || []).map((account: any) => [account.id, account]))
+    const knownProfileIds = new Set(profileRows.map((profile: any) => profile.id))
+    const providerUserIds = new Set(providerRows.map((provider: any) => provider.user_id))
+    const missingCustomerProfiles = (payload.authUsers || [])
+      .filter((account: any) => !knownProfileIds.has(account.id) && !providerUserIds.has(account.id) && account.id !== userId)
+      .map((account: any) => ({ id: account.id, full_name: account.user_metadata?.full_name || account.email?.split('@')[0] || 'Customer', phone: account.user_metadata?.phone || '', created_at: account.created_at, suspended: false, role: 'customer' }))
+    const customerRows = [...profileRows.filter((profile: any) => profile.role === 'customer'), ...missingCustomerProfiles]
     const customers: AdminCustomer[] = customerRows.map((c: any) => {
       const customerOrders = orderRows.filter((o: any) => o.customer_id === c.id)
       const spent = customerOrders.filter((o: any) => o.status === 'delivered').reduce((s: number, o: any) => s + o.total_amount, 0)
@@ -212,7 +227,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       return {
         id: c.id,
         full_name: c.full_name || 'Customer',
-        email: '',
+        email: authById.get(c.id)?.email || '',
         phone: c.phone || '',
         date_joined: c.created_at,
         total_orders: customerOrders.length,
@@ -224,16 +239,17 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
     const orders: AdminOrder[] = orderRows.map((o: any) => ({
       id: o.id,
-      customer_name: o.profiles?.full_name || 'Customer',
-      customer_phone: o.profiles?.phone || '',
-      provider_name: o.providers?.store_name || 'Store',
+      customer_name: profileById.get(o.customer_id)?.full_name || 'Customer',
+      customer_phone: profileById.get(o.customer_id)?.phone || '',
+      provider_name: providerById.get(o.provider_id)?.store_name || 'Store',
       provider_id: o.provider_id,
-      service_type: o.providers?.service_type === 'lpg' ? 'lpg' : 'water',
+      service_type: providerById.get(o.provider_id)?.service_type === 'lpg' ? 'lpg' : 'water',
       items_summary: itemsSummaryByOrder[o.id] || '',
       total_amount: o.total_amount,
-      delivery_fee: o.providers?.delivery_fee || 0,
+      delivery_fee: providerById.get(o.provider_id)?.delivery_fee || 0,
       status: o.status,
       payment_method: o.payment_method,
+      payment_status: o.payment_status || 'unpaid',
       delivery_address: o.delivery_address,
       notes: o.notes || '',
       created_at: o.created_at,
@@ -241,13 +257,13 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       admin_note: o.admin_note || '',
     }))
 
-    const settings: PlatformSettings = settingsRes.data ? {
-      platform_name: settingsRes.data.platform_name,
-      commission_rate: settingsRes.data.commission_rate,
-      water_enabled: settingsRes.data.water_enabled,
-      lpg_enabled: settingsRes.data.lpg_enabled,
-      announcement: settingsRes.data.announcement || '',
-      announcement_active: settingsRes.data.announcement_active,
+    const settings: PlatformSettings = payload.settings ? {
+      platform_name: payload.settings.platform_name,
+      commission_rate: payload.settings.commission_rate,
+      water_enabled: payload.settings.water_enabled,
+      lpg_enabled: payload.settings.lpg_enabled,
+      announcement: payload.settings.announcement || '',
+      announcement_active: payload.settings.announcement_active,
     } : defaultPlatformSettings
 
     setState({ providers, customers, orders, settings, isLoggedIn: true, loading: false })
@@ -335,8 +351,9 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   async function updateSettings(updates: Partial<PlatformSettings>) {
     const updated = { ...state.settings, ...updates }
+    const { error } = await supabase.from('platform_settings').upsert({ id: 1, ...updated })
+    if (error) throw error
     setState(s => ({ ...s, settings: updated }))
-    await supabase.from('platform_settings').update(updated).eq('id', 1)
   }
 
   return (

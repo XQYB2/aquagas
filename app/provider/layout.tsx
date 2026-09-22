@@ -41,7 +41,7 @@ if (!isLoggedIn) return null
       <ProviderSidebar />
       {/* Main content area — offset for sidebar on desktop, top bar on mobile */}
       <main className="flex-1 md:ml-60 pt-[calc(3.5rem+env(safe-area-inset-top))] md:pt-0 min-h-screen">
-        <div className="max-w-5xl mx-auto px-4 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 lg:py-8">
           {children}
         </div>
       </main>

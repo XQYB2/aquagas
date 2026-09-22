@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Droplets, Eye, EyeOff } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Droplets, Eye, EyeOff } from 'lucide-react'
 
 export default function AuthResetPage() {
   const router = useRouter()
@@ -69,13 +69,13 @@ export default function AuthResetPage() {
 
         {done ? (
           <div className="bg-green-50 border border-green-100 rounded-2xl p-5 text-center">
-            <p className="text-2xl mb-2">✅</p>
+            <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-green-500" />
             <p className="text-green-700 font-semibold">Password updated!</p>
             <p className="text-green-600 text-sm mt-1">Redirecting you to the app…</p>
           </div>
         ) : invalid ? (
           <div className="bg-red-50 border border-red-100 rounded-2xl p-5 text-center">
-            <p className="text-2xl mb-2">⚠️</p>
+            <AlertTriangle className="mx-auto mb-2 h-8 w-8 text-amber-500" />
             <p className="text-red-700 font-semibold">Link expired or invalid</p>
             <p className="text-red-600 text-sm mt-2">Password reset links expire after 1 hour and can only be used once.</p>
             <button onClick={() => router.push('/login')}

@@ -27,13 +27,13 @@ export function ProviderCard({
   const ServiceIcon = service_type === 'lpg' ? Flame : Droplets
 
   const initials = store_name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
-  const bgColor = service_type === 'water' ? 'from-water-400 to-water-600' : service_type === 'lpg' ? 'from-lpg-400 to-lpg-600' : 'from-purple-400 to-purple-600'
+  const bgColor = service_type === 'water' ? 'from-water-400 to-water-600' : service_type === 'lpg' ? 'from-lpg-400 to-lpg-600' : 'from-water-500 to-red-500'
 
   return (
     <Link href={`/store/${id}`}>
-      <div className={`group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 ${!is_open ? 'opacity-60' : ''}`}>
+      <article className={`group h-full bg-white rounded-[1.5rem] border border-gray-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200 ${!is_open ? 'opacity-60' : ''}`}>
         {/* Store Banner */}
-        <div className={`h-32 bg-gradient-to-br ${bgColor} relative flex items-center justify-center`}>
+        <div className={`h-44 sm:h-48 bg-gradient-to-br ${bgColor} relative flex items-center justify-center`}>
           {logo_url ? (
             <img src={logo_url} alt={store_name} className="w-full h-full object-cover" />
           ) : (
@@ -53,11 +53,11 @@ export function ProviderCard({
         </div>
 
         {/* Card Body */}
-        <div className="p-4">
-          <h3 className="font-semibold text-gray-900 text-sm leading-tight mb-1 group-hover:text-water-600 transition-colors">{store_name}</h3>
-          <p className="text-gray-400 text-xs mb-3 truncate">{address}</p>
+        <div className="p-5">
+          <h3 className="font-extrabold text-gray-900 text-lg leading-tight mb-2 group-hover:text-water-600 transition-colors">{store_name}</h3>
+          <p className="text-gray-500 text-sm mb-4 line-clamp-2 min-h-10">{address}</p>
 
-          <div className="flex items-center justify-between text-xs text-gray-500">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
             <div className="flex items-center gap-1">
               <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
               <span className="font-semibold text-gray-700">{rating.toFixed(1)}</span>
@@ -73,7 +73,7 @@ export function ProviderCard({
             </div>
           </div>
         </div>
-      </div>
+      </article>
     </Link>
   )
 }

@@ -108,7 +108,7 @@ export default function ProviderSlotsPage() {
 
     const [{ data: profiles }, { data: items }] = await Promise.all([
       supabase.from('profiles').select('id, full_name').in('id', customerIds),
-      supabase.from('order_items').select('order_id, quantity, products(name)').in('order_id', orderIds),
+      supabase.from('order_items').select('order_id, product_name, quantity, products(name)').in('order_id', orderIds),
     ])
 
     const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p.full_name]))
@@ -120,7 +120,7 @@ export default function ProviderSlotsPage() {
       delivery_address: o.delivery_address,
       items: (items || [])
         .filter((i: any) => i.order_id === o.id)
-        .map((i: any) => ({ product_name: i.products?.name || 'Item', quantity: i.quantity })),
+        .map((i: any) => ({ product_name: i.product_name || i.products?.name || 'Product unavailable', quantity: i.quantity })),
     }))
     setBatchOrders(b => ({ ...b, [slotId]: orders }))
   }

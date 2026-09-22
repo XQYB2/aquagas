@@ -10,32 +10,37 @@ export default function AdminSettingsPage() {
   const [form, setForm] = useState(settings)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [admins, setAdmins] = useState([
-    { id: '1', name: 'Platform Admin', email: 'admin@aquagas.ph', role: 'super' },
-    { id: '2', name: 'Operations Manager', email: 'ops@aquagas.ph', role: 'admin' },
-  ])
+  const [saveError, setSaveError] = useState('')
+  const [admins, setAdmins] = useState<{ id: string; name: string; email: string; role: string; active: boolean }[]>([])
   const [newAdminEmail, setNewAdminEmail] = useState('')
   const [addingAdmin, setAddingAdmin] = useState(false)
 
   useEffect(() => { setForm(settings) }, [settings])
+  useEffect(() => { loadAdmins() }, [])
+
+  async function adminHeaders() { const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession(); return { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` } }
+  async function loadAdmins() { const response = await fetch('/api/admin/members', { headers: await adminHeaders() }); const json = await response.json(); if (response.ok) setAdmins((json.members || []).map((m:any)=>({ id:m.user_id,name:m.name,email:m.email,role:m.permission_role,active:m.active }))); else setSaveError(json.error || 'Admin accounts could not be loaded.') }
 
   const changed = JSON.stringify(form) !== JSON.stringify(settings)
 
   async function handleSave() {
     setSaving(true)
-    await new Promise(r => setTimeout(r, 700))
-    updateSettings(form)
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    setSaveError('')
+    try {
+      await updateSettings(form)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Settings could not be saved.')
+    } finally { setSaving(false) }
   }
 
-  function handleAddAdmin() {
+  async function handleAddAdmin() {
     if (!newAdminEmail.trim() || !newAdminEmail.includes('@')) return
-    setAdmins(a => [...a, { id: Date.now().toString(), name: newAdminEmail.split('@')[0], email: newAdminEmail, role: 'admin' }])
-    setNewAdminEmail('')
-    setAddingAdmin(false)
+    const response=await fetch('/api/admin/members',{method:'POST',headers:await adminHeaders(),body:JSON.stringify({email:newAdminEmail.trim(),permission_role:'admin'})});const json=await response.json();if(!response.ok){setSaveError(json.error||'Invitation failed.');return}setNewAdminEmail('');setAddingAdmin(false);await loadAdmins()
   }
+
+  async function deactivateAdmin(id:string){const response=await fetch('/api/admin/members',{method:'PATCH',headers:await adminHeaders(),body:JSON.stringify({user_id:id,active:false})});const json=await response.json();if(!response.ok)setSaveError(json.error||'Account could not be deactivated.');else loadAdmins()}
 
   return (
     <div className="max-w-2xl">
@@ -49,6 +54,7 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="space-y-4">
+        {saveError && <div role="alert" className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{saveError}</div>}
         {/* Platform info */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <h2 className="font-semibold text-gray-900 text-sm mb-4 flex items-center gap-2">
@@ -205,11 +211,11 @@ export default function AdminSettingsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${admin.role === 'super' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}>
-                    {admin.role === 'super' ? 'Super Admin' : 'Admin'}
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${admin.role === 'owner' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}>
+                    {admin.role === 'owner' ? 'Owner' : admin.role}
                   </span>
-                  {admin.role !== 'super' && (
-                    <button onClick={() => setAdmins(a => a.filter(x => x.id !== admin.id))}
+                  {admin.role !== 'owner' && admin.active && (
+                    <button onClick={() => deactivateAdmin(admin.id)}
                       className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-gray-300 hover:text-red-500">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -218,7 +224,7 @@ export default function AdminSettingsPage() {
               </div>
             ))}
           </div>
-          <p className="text-xs text-gray-400 mt-3">Admin accounts have full platform access. Set role = 'admin' in Supabase for real auth.</p>
+          <p className="text-xs text-gray-400 mt-3">Invitations are sent by Supabase Auth. Only owners can invite or deactivate administrators.</p>
         </div>
 
         {/* Save button */}

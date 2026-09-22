@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen'
 import { LegalAgreementDialog, type LegalDocument } from '@/components/auth/LegalAgreementDialog'
@@ -101,7 +101,15 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-sm">
+      <div className="relative w-full max-w-sm">
+        <Link
+          href="/"
+          aria-label="Back to landing page"
+          title="Back to home"
+          className="absolute left-0 top-0 flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-white hover:text-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-500 focus-visible:ring-offset-2"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        </Link>
         <div className="text-center mb-8">
           <img src="/logo.svg" alt="AquaGas" className="w-14 h-14 rounded-2xl mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900">Create account</h1>

@@ -138,16 +138,16 @@ export default function HomePage() {
           <div className="absolute top-4 left-1/4 w-64 h-64 rounded-full bg-white blur-3xl" />
           <div className="absolute bottom-0 right-1/4 w-48 h-48 rounded-full bg-white blur-2xl" />
         </div>
-        <div className="relative max-w-6xl mx-auto px-4 py-12 md:py-20">
-          <div className="max-w-2xl">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-24">
+          <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
               <Sparkles className="w-3.5 h-3.5" />
               Fast delivery in your area
             </div>
-            <h1 className="text-3xl md:text-5xl font-extrabold leading-tight mb-4">
+            <h1 className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight mb-5">
               Water & Gas<br />delivered to your door
             </h1>
-            <p className="text-white/80 text-base md:text-lg mb-8">
+            <p className="text-white/85 text-lg md:text-xl mb-9 max-w-2xl">
               Order from local water refilling stations and LPG suppliers — fast, safe, and hassle-free.
             </p>
             <div className="relative">
@@ -157,7 +157,7 @@ export default function HomePage() {
                 placeholder="Search stores or address…"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 rounded-2xl text-gray-900 bg-white shadow-lg text-sm focus:outline-none focus:ring-2 focus:ring-water-300 placeholder:text-gray-400"
+                className="w-full h-16 pl-12 pr-4 rounded-2xl text-gray-900 bg-white shadow-xl text-base focus:outline-none focus:ring-2 focus:ring-water-300 placeholder:text-gray-400"
               />
             </div>
           </div>
@@ -169,7 +169,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
         {/* Location banner */}
         {!locationReady ? (
@@ -220,11 +220,12 @@ export default function HomePage() {
         )}
 
         {/* Category Filters */}
-        <div className="flex flex-wrap gap-2 sm:gap-3 mb-6">
+        <div className="sticky top-16 z-30 -mx-4 mb-8 flex flex-col gap-3 border-y border-gray-100 bg-white/95 px-4 py-4 backdrop-blur sm:mx-0 sm:flex-row sm:items-center sm:justify-between sm:rounded-2xl sm:border sm:px-5">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
           {[
-            { key: 'all' as FilterType, label: 'All' },
-            { key: 'water' as FilterType, label: '💧 Water Refill' },
-            { key: 'lpg' as FilterType, label: '🔥 LPG Gas' },
+            { key: 'all' as FilterType, label: 'All', icon: Sparkles },
+            { key: 'water' as FilterType, label: 'Water Refill', icon: Droplets },
+            { key: 'lpg' as FilterType, label: 'LPG Gas', icon: Flame },
           ].map(tab => (
             <button
               key={tab.key}
@@ -239,9 +240,20 @@ export default function HomePage() {
                   : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
               }`}
             >
-              {tab.label}
+              <tab.icon className="mr-2 inline h-4 w-4" />{tab.label}
             </button>
           ))}
+          </div>
+          <label className="flex min-h-11 w-full items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-600 transition-colors focus-within:border-water-400 focus-within:ring-2 focus-within:ring-water-100 sm:w-auto">
+            <ArrowUpDown className="h-4 w-4 shrink-0 text-water-500" aria-hidden="true" />
+            <span className="sr-only">Sort stores by</span>
+            <select value={sort} onChange={event => setSort(event.target.value as SortType)} className="min-w-0 flex-1 cursor-pointer appearance-none bg-transparent py-2 pr-6 font-semibold text-gray-700 outline-none sm:min-w-48" aria-label="Sort stores by">
+              <option value="nearest">Nearest to farthest</option>
+              <option value="rating_desc">Highest rated</option>
+              <option value="rating_asc">Lowest rated</option>
+              <option value="fastest">Fastest delivery</option>
+            </select>
+          </label>
         </div>
 
         {/* Providers Grid */}
@@ -250,40 +262,25 @@ export default function HomePage() {
             {filter === 'all' ? 'Nearby Stores' : filter === 'water' ? 'Water Refilling Stations' : 'LPG Gas Suppliers'}
             {locationReady && <span className="text-gray-400 font-normal text-sm ml-2">({providers.length})</span>}
           </h2>
-          <label className="flex min-h-11 w-full items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-600 shadow-sm transition-colors focus-within:border-water-400 focus-within:ring-2 focus-within:ring-water-100 sm:w-auto">
-            <ArrowUpDown className="h-4 w-4 shrink-0 text-water-500" aria-hidden="true" />
-            <span className="sr-only">Sort stores by</span>
-            <select
-              value={sort}
-              onChange={event => setSort(event.target.value as SortType)}
-              className="min-w-0 flex-1 cursor-pointer appearance-none bg-transparent py-2 pr-6 font-semibold text-gray-700 outline-none sm:min-w-44"
-              aria-label="Sort stores by"
-            >
-              <option value="nearest">Nearest to farthest</option>
-              <option value="rating_desc">Highest to lowest rating</option>
-              <option value="rating_asc">Lowest to highest rating</option>
-              <option value="fastest">Fastest delivery</option>
-            </select>
-          </label>
         </div>
 
         {loading ? (
           <div className="text-center py-20 text-gray-400 text-sm">Loading stores…</div>
         ) : !locationReady ? (
           <div className="text-center py-20">
-            <p className="text-5xl mb-4">📍</p>
+            <MapPin className="mx-auto mb-4 h-12 w-12 text-gray-300" />
             <p className="text-gray-500 font-medium">Set your location above to see nearby stores.</p>
           </div>
         ) : providers.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-4xl mb-4">🔍</p>
+            <Search className="mx-auto mb-4 h-11 w-11 text-gray-300" />
             <p className="text-gray-500 font-medium">No stores within {RADIUS_KM} km of your location.</p>
             <button onClick={() => { setQuery(''); setFilter('all'); setSort('nearest') }} className="mt-4 text-water-500 font-semibold text-sm hover:underline">
               Clear filters
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 lg:gap-6">
             {providers.map(p => (
               <ProviderCard key={p.id} {...p} />
             ))}

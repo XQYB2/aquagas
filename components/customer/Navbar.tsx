@@ -6,6 +6,7 @@ import { useCart } from '@/lib/cart-context'
 import { useAuth } from '@/lib/auth-context'
 import { useState } from 'react'
 import { useTheme, type Theme } from '@/lib/theme-context'
+import { NotificationOverlay } from '@/components/customer/NotificationOverlay'
 
 const THEME_CYCLE: Theme[] = ['light', 'dark']
 
@@ -29,15 +30,15 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shadow-sm transition-colors duration-200">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[4.5rem] flex items-center justify-between">
         {/* Logo */}
-        <Link href="/home" className="flex items-center gap-2 font-bold text-xl">
-          <img src="/logo.svg" alt="AquaGas" className="w-9 h-9 rounded-xl" />
+        <Link href="/home" className="flex items-center gap-2.5 font-bold text-2xl">
+          <img src="/logo.svg" alt="AquaGas" className="w-10 h-10 rounded-xl" />
           <span><span className="text-water-600 dark:text-water-400">Aqua</span><span className="text-red-600">Gas</span></span>
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+        <nav className="hidden md:flex items-center gap-8 text-base font-semibold">
           <Link href="/home" className="text-gray-600 dark:text-gray-400 hover:text-water-600 dark:hover:text-water-400 transition-colors">Browse</Link>
           <Link href="/orders" className="text-gray-600 dark:text-gray-400 hover:text-water-600 dark:hover:text-water-400 transition-colors">My Orders</Link>
           {!user && (
@@ -55,6 +56,8 @@ export function Navbar() {
             <ThemeIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             <span className="hidden md:block text-xs text-gray-400 dark:text-gray-500 font-medium">{themeLabel}</span>
           </button>
+
+          {user && <NotificationOverlay userId={user.id} />}
 
           <Link href="/checkout" className="relative flex min-h-11 min-w-11 items-center justify-center rounded-xl p-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <ShoppingCart className="w-5 h-5 text-gray-700 dark:text-gray-300" />

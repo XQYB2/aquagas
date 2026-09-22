@@ -7,10 +7,12 @@ import { Download, TrendingUp, ShoppingBag, CheckCircle, XCircle, Star, Droplets
 
 type Period = '7d' | '14d' | '30d'
 
-function get30DayData(orders: AdminOrder[]): { day: string; revenue: number; orders: number; water: number; lpg: number }[] {
+function getRangeData(orders: AdminOrder[], start: string, end: string): { day: string; revenue: number; orders: number; water: number; lpg: number }[] {
   const result = []
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
+  const startDate = new Date(`${start}T00:00:00`); const endDate = new Date(`${end}T23:59:59`)
+  const days = Math.min(366, Math.max(1, Math.ceil((endDate.getTime()-startDate.getTime())/86400000)+1))
+  for (let i = 0; i < days; i++) {
+    const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000)
     const label = date.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })
     const dayOrders = orders.filter(o => new Date(o.created_at).toDateString() === date.toDateString() && o.status !== 'cancelled')
     const waterOrders = dayOrders.filter(o => o.service_type === 'water').length
@@ -39,11 +41,14 @@ function getProviderPerformance(providers: AdminProvider[]) {
 export default function AdminReportsPage() {
   const { orders, customers, providers } = useAdmin()
   const [period, setPeriod] = useState<Period>('30d')
-  const allData = useMemo(() => get30DayData(orders), [orders])
+  const today = new Date().toISOString().slice(0,10)
+  const [endDate, setEndDate] = useState(today)
+  const [startDate, setStartDate] = useState(new Date(Date.now()-29*86400000).toISOString().slice(0,10))
+  const allData = useMemo(() => getRangeData(orders, startDate, endDate), [orders, startDate, endDate])
   const providerPerf = useMemo(() => getProviderPerformance(providers), [providers])
 
   const periodDays = period === '7d' ? 7 : period === '14d' ? 14 : 30
-  const chartData = allData.slice(-periodDays)
+  const chartData = allData
 
   // Computed metrics
   const totalRevenue = chartData.reduce((s, d) => s + d.revenue, 0)
@@ -87,11 +92,11 @@ export default function AdminReportsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
         <h1 className="text-xl font-bold text-gray-900">Reports & Analytics</h1>
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap gap-1.5">
           {PERIODS.map(p => (
-            <button key={p.key} onClick={() => setPeriod(p.key)}
+            <button key={p.key} onClick={() => { setPeriod(p.key); const days=p.key==='7d'?7:p.key==='14d'?14:30; setEndDate(today); setStartDate(new Date(Date.now()-(days-1)*86400000).toISOString().slice(0,10)) }}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                 period === p.key ? 'bg-indigo-600 text-white' : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-300'
               }`}
@@ -99,6 +104,8 @@ export default function AdminReportsPage() {
               {p.label}
             </button>
           ))}
+          <input aria-label="Report start date" type="date" value={startDate} max={endDate} onChange={e=>setStartDate(e.target.value)} className="h-9 rounded-xl border border-gray-200 bg-white px-2 text-xs font-semibold"/>
+          <input aria-label="Report end date" type="date" value={endDate} min={startDate} max={today} onChange={e=>setEndDate(e.target.value)} className="h-9 rounded-xl border border-gray-200 bg-white px-2 text-xs font-semibold"/>
         </div>
       </div>
 

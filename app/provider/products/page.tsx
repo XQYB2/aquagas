@@ -18,8 +18,10 @@ type ProductForm = {
 }
 
 const EMPTY_FORM: ProductForm = {
-  name: '', description: '', price: '', unit: 'gallon', category: 'water', is_available: true, stock_quantity: '0', image_url: null,
+  name: '', description: '', price: '', unit: '250 ml', category: 'water', is_available: true, stock_quantity: '0', image_url: null,
 }
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024
+const UNIT_OPTIONS = { water: ['250 ml', '350 ml', '500 ml', '1 L', '4 L', '5 L', '1 gallon', '5 gallons'], lpg: ['2.7 kg', '5 kg', '11 kg', '22 kg', '50 kg', 'cylinder'] } as const
 
 export default function ProductsPage() {
   const { products, updateProduct, addProduct, deleteProduct } = useProvider()
@@ -29,6 +31,7 @@ export default function ProductsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [imageError, setImageError] = useState('')
   const [bulkToggling, setBulkToggling] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -47,6 +50,7 @@ export default function ProductsPage() {
   function openAdd() {
     setForm(EMPTY_FORM)
     setEditingId(null)
+    setImageError('')
     setShowForm(true)
   }
 
@@ -66,6 +70,9 @@ export default function ProductsPage() {
   }
 
   async function handleImageUpload(file: File) {
+    setImageError('')
+    if (!file.type.startsWith('image/')) { setImageError('Please select an image file.'); return }
+    if (file.size >= MAX_IMAGE_BYTES) { setImageError('Product images must be smaller than 10 MB.'); return }
     setUploading(true)
     const ext = file.name.split('.').pop()
     const path = `products/${Date.now()}.${ext}`
@@ -73,7 +80,7 @@ export default function ProductsPage() {
     if (!error) {
       const { data } = supabase.storage.from('product-images').getPublicUrl(path)
       setForm(f => ({ ...f, image_url: data.publicUrl }))
-    }
+    } else setImageError(error.message || 'Image upload failed. Please try again.')
     setUploading(false)
   }
 
@@ -214,6 +221,8 @@ export default function ProductsPage() {
                     Remove photo
                   </button>
                 )}
+                <p className="mt-1 text-xs text-gray-400">JPG, PNG or WebP. Maximum file size: 10 MB.</p>
+                {imageError && <p role="alert" className="mt-1 text-xs font-medium text-red-500">{imageError}</p>}
               </div>
 
               <div>
@@ -233,7 +242,9 @@ export default function ProductsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Unit</label>
-                  <input type="text" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} placeholder="gallon / cylinder / set" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-water-300 placeholder:text-gray-400" />
+                  <select value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-water-300">
+                    {UNIT_OPTIONS[form.category].map(unit => <option key={unit} value={unit}>{unit}</option>)}
+                  </select>
                 </div>
               </div>
 
@@ -250,7 +261,7 @@ export default function ProductsPage() {
                     <button
                       key={cat}
                       type="button"
-                      onClick={() => setForm(f => ({ ...f, category: cat }))}
+                      onClick={() => setForm(f => ({ ...f, category: cat, unit: UNIT_OPTIONS[cat][0] }))}
                       className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${
                         form.category === cat
                           ? cat === 'water' ? 'border-water-500 bg-water-50 text-water-700' : 'border-lpg-500 bg-lpg-50 text-lpg-700'

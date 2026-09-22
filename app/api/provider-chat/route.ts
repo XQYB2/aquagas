@@ -34,15 +34,12 @@ FORMATTING RULES (strictly follow):
 - Keep responses short and conversational — like a chat message, not a document
 - Order info format: "Order #XXXXXX — Status" on its own line`
 
-// Only models confirmed to have quota on this API key
 const MODEL_FALLBACKS = [
-  'gemini-2.5-flash-lite',
-  'gemini-3.1-flash-lite',
   'gemini-3.5-flash-lite',
-  'gemini-2.5-flash',
-  'gemini-3-flash',
+  'gemini-3.1-flash-lite',
   'gemini-3.5-flash',
   'gemini-3.6-flash',
+  'gemini-2.5-flash',
 ]
 
 function isRetryableError(err: any): boolean {
@@ -50,9 +47,16 @@ function isRetryableError(err: any): boolean {
   return (
     err?.status === 429 ||
     err?.status === 404 ||
+    err?.status === 503 ||
+    err?.status >= 500 ||
     msg.includes('429') ||
+    msg.includes('503') ||
     msg.includes('quota') ||
     msg.includes('rate limit') ||
+    msg.includes('high demand') ||
+    msg.includes('service unavailable') ||
+    msg.includes('fetch failed') ||
+    msg.includes('network') ||
     msg.includes('resource_exhausted') ||
     msg.includes('not found') ||
     msg.includes('does not exist') ||
@@ -153,7 +157,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ reply: text }, { headers: CORS_HEADERS })
       } catch (err: any) {
         if (isRetryableError(err)) {
-          console.warn(`[ProviderBot] ${modelName} skipped: ${err?.message?.slice(0, 80)}`)
+          console.warn(`[ProviderBot] ${modelName} unavailable (${err?.status || 'network'}); trying fallback`)
           lastErr = err
           continue
         }
@@ -161,7 +165,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.error('[ProviderBot] all models rate limited:', lastErr?.message)
+    console.error('[ProviderBot] all configured models unavailable:', lastErr?.status || lastErr?.message)
     return NextResponse.json(
       { error: 'Assistant is busy right now. Please try again in a moment.' },
       { status: 429, headers: CORS_HEADERS }

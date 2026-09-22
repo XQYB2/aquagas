@@ -6,7 +6,7 @@ import { OrderStatusBadge, exportToCsv } from '@/components/admin/AdminUI'
 import { Search, X, AlertTriangle, Download, Droplets, Flame, Phone, MapPin } from 'lucide-react'
 import type { AdminOrder } from '@/lib/admin-context'
 
-type StatusFilter = 'all' | 'placed' | 'confirmed' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled'
+type StatusFilter = 'all' | 'placed' | 'confirmed' | 'awaiting_pickup' | 'picked_up' | 'being_prepared' | 'out_for_delivery' | 'delivered' | 'cancelled'
 type ServiceFilter = 'all' | 'water' | 'lpg'
 
 export default function AdminOrdersPage() {
@@ -24,7 +24,9 @@ export default function AdminOrdersPage() {
     { key: 'all', label: 'All' },
     { key: 'placed', label: 'New' },
     { key: 'confirmed', label: 'Confirmed' },
-    { key: 'preparing', label: 'Preparing' },
+    { key: 'awaiting_pickup', label: 'Awaiting Pickup' },
+    { key: 'picked_up', label: 'Picked Up' },
+    { key: 'being_prepared', label: 'Preparing' },
     { key: 'out_for_delivery', label: 'On the Way' },
     { key: 'delivered', label: 'Delivered' },
     { key: 'cancelled', label: 'Cancelled' },

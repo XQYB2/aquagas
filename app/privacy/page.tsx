@@ -14,15 +14,16 @@ export default function PrivacyPage() {
     <div className="flex min-h-screen flex-col bg-gray-50">
       <PublicHeader />
 
-      <main className="flex-1 px-4 py-8 sm:py-12">
-        <div className="mx-auto max-w-2xl">
+      <main className="flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <div className="mx-auto max-w-6xl">
           <BackLink href="/" label="Back to home" variant="inline" className="mb-5" />
 
-          <article className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-8">
-            <h1 className="mb-2 text-2xl font-bold text-gray-900">Privacy Policy</h1>
-            <p className="mb-8 text-sm text-gray-400">Last updated: August 2025</p>
+          <article className="rounded-[1.75rem] border border-gray-100 bg-white p-6 shadow-sm sm:p-10 lg:p-12">
+            <div className="max-w-4xl">
+            <h1 className="mb-2 text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">Privacy Policy</h1>
+            <p className="mb-10 text-base text-gray-400">Last updated: August 2025</p>
 
-            <div className="space-y-6 text-sm leading-relaxed text-gray-700">
+            <div className="space-y-8 text-base leading-8 text-gray-700 [&_h2]:text-lg [&_h2]:font-bold">
               <section>
                 <h2 className="mb-2 text-base font-semibold text-gray-900">1. Information We Collect</h2>
                 <p>We collect information you provide directly: full name, phone number, email address, and delivery address. We also collect usage data such as order history, app activity, and device information to improve our service.</p>
@@ -78,6 +79,7 @@ export default function PrivacyPage() {
                 <h2 className="mb-2 text-base font-semibold text-gray-900">10. Contact</h2>
                 <p>For privacy concerns or data requests, contact us at <a href="mailto:aquagas.business@gmail.com" className="font-medium text-water-600 hover:text-water-700">aquagas.business@gmail.com</a>.</p>
               </section>
+            </div>
             </div>
           </article>
         </div>

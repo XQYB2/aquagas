@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation'
 import { useProvider } from '@/lib/provider-context'
 import { OrderStatusBadge, getNextStatuses, STATUS_LABELS, STATUS_DESCRIPTIONS } from '@/components/provider/OrderStatusBadge'
-import { Phone, MapPin, Banknote, Clock, AlertTriangle, Package, Camera, Upload } from 'lucide-react'
+import { Phone, MapPin, Banknote, Clock, AlertTriangle, Package, Camera, Upload, Map } from 'lucide-react'
 import Link from 'next/link'
 import { useRef, useState } from 'react'
 import type { OrderStatus } from '@/lib/provider-context'
@@ -37,6 +37,7 @@ export default function ProviderOrderDetailPage() {
   const [estimatedDelivery, setEstimatedDelivery] = useState('')
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
+  const [showMap, setShowMap] = useState(false)
   const [proofUrl, setProofUrl] = useState<string | null>((orders.find(o => o.id === id) as any)?.delivery_proof_url ?? null)
   const [uploadingProof, setUploadingProof] = useState(false)
   const [proofError, setProofError] = useState('')
@@ -68,10 +69,11 @@ export default function ProviderOrderDetailPage() {
   }
 
   async function handleConfirmCancel() {
+    if (!cancelReason.trim()) return
     setLoading('cancelled')
     setShowCancelModal(false)
     await new Promise(r => setTimeout(r, 600))
-    updateOrderStatus(id, 'cancelled', cancelReason.trim() ? { cancel_reason: cancelReason.trim() } : undefined)
+    await updateOrderStatus(id, 'cancelled', { cancel_reason: cancelReason.trim() })
     setLoading(null)
     router.push('/provider/orders')
   }
@@ -107,7 +109,7 @@ export default function ProviderOrderDetailPage() {
   const primaryNext = nextStatuses.filter(s => s !== 'cancelled')[0]
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <BackLink href="/provider/orders" label="Back to orders" variant="surface" iconOnly />
@@ -216,7 +218,19 @@ export default function ProviderOrderDetailPage() {
               <p className="text-sm text-amber-800">{order.notes}</p>
             </div>
           )}
+          {order.delivery_lat && order.delivery_lng && (
+            <div className="mt-4 border-t border-gray-100 pt-4">
+              <button type="button" onClick={() => setShowMap(value => !value)} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-water-50 px-4 text-sm font-bold text-water-700 hover:bg-water-100">
+                <Map className="h-4 w-4" /> {showMap ? 'Hide delivery map' : 'Show delivery map'}
+              </button>
+              {showMap && <div className="mt-4"><DeliveryMap destLat={order.delivery_lat} destLng={order.delivery_lng} customerName={order.customer_name} address={order.delivery_address} /></div>}
+            </div>
+          )}
         </div>
+
+        {user && order.status !== 'cancelled' && (
+          <OrderChat orderId={order.id} currentUserId={user.id} currentRole="provider" otherPartyName={order.customer_name} orderStatus={order.status} />
+        )}
 
         {/* Order items */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -248,22 +262,6 @@ export default function ProviderOrderDetailPage() {
           </div>
         </div>
 
-        {/* Delivery map */}
-        {order.delivery_lat && order.delivery_lng && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="font-semibold text-gray-900 text-sm mb-3 flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-water-500" />
-              Delivery Location
-            </h2>
-            <DeliveryMap
-              destLat={order.delivery_lat}
-              destLng={order.delivery_lng}
-              customerName={order.customer_name}
-              address={order.delivery_address}
-            />
-          </div>
-        )}
-
         {/* Payment & timing */}
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-white rounded-2xl border border-gray-100 p-4">
@@ -291,17 +289,6 @@ export default function ProviderOrderDetailPage() {
             </p>
           </div>
         </div>
-
-        {/* Chat with customer */}
-        {user && order.status !== 'cancelled' && (
-          <OrderChat
-            orderId={order.id}
-            currentUserId={user.id}
-            currentRole="provider"
-            otherPartyName={order.customer_name}
-            orderStatus={order.status}
-          />
-        )}
 
         {/* Proof of Delivery */}
         {order.status === 'delivered' && (
@@ -397,7 +384,8 @@ export default function ProviderOrderDetailPage() {
               </button>
               <button
                 onClick={handleConfirmCancel}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-colors"
+                disabled={!cancelReason.trim() || loading === 'cancelled'}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel Order
               </button>

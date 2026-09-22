@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { User, Phone, Mail, MapPin, LogOut, Plus, Trash2, ChevronRight, Home, Briefcase, Heart, MoreHorizontal, Pencil, Check, X } from 'lucide-react'
+import { User, Phone, Mail, MapPin, LogOut, Plus, Trash2, ChevronRight, Home, Briefcase, Heart, MoreHorizontal, Pencil, Check, X, LockKeyhole } from 'lucide-react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 const AddressPicker = dynamic(() => import('@/components/maps/AddressPicker').then(m => m.AddressPicker), { ssr: false })
@@ -129,7 +129,7 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <p className="text-5xl mb-4">🔐</p>
+        <LockKeyhole className="mx-auto mb-4 h-12 w-12 text-gray-300" />
         <h2 className="text-xl font-bold mb-2">Sign in to view your profile</h2>
         <Link href="/login" className="inline-block mt-4 bg-water-500 text-white font-semibold px-6 py-3 rounded-xl hover:bg-water-600 transition-colors">
           Sign In
@@ -139,20 +139,20 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-xl font-bold text-gray-900 mb-6">My Profile</h1>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900 mb-8">My Profile</h1>
 
-      <div className="space-y-4">
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         {/* User Info */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <div className="flex items-center gap-4 mb-5">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-water-400 to-water-600 flex items-center justify-center">
-              <span className="text-white text-xl font-bold">
+        <div className="bg-white rounded-3xl border border-gray-200 p-6 sm:p-8">
+          <div className="flex items-center gap-5 mb-7">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-water-400 to-water-600 flex items-center justify-center">
+              <span className="text-white text-2xl font-bold">
                 {(profile?.full_name || user?.email || 'G')[0].toUpperCase()}
               </span>
             </div>
             <div>
-              <p className="font-bold text-gray-900">{profile?.full_name || 'Your Name'}</p>
+              <p className="text-xl font-bold text-gray-900">{profile?.full_name || 'Your Name'}</p>
               <p className="text-sm text-gray-400">{user?.email || '—'}</p>
             </div>
           </div>
@@ -274,15 +274,15 @@ export default function ProfilePage() {
         </div>
 
         {/* Saved Addresses */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-water-500" />
+        <div className="bg-white rounded-3xl border border-gray-200 p-6 sm:p-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-bold text-gray-900 text-lg flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-water-500" />
               Saved Addresses
             </h2>
             <button
               onClick={() => setAddingAddr(a => !a)}
-              className="text-water-600 text-sm font-semibold flex items-center gap-1 hover:text-water-700 transition-colors"
+              className="min-h-11 px-3 text-water-600 text-sm font-semibold flex items-center gap-1 hover:text-water-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Add
@@ -355,20 +355,19 @@ export default function ProfilePage() {
                 const cat = CATEGORIES.find(c => c.value === addr.category) ?? CATEGORIES[3]
                 const Icon = cat.icon
                 return (
-                  <div key={addr.id} className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
-                    <div className={`w-8 h-8 rounded-xl ${cat.bg} flex items-center justify-center shrink-0`}>
-                      <Icon className={`w-4 h-4 ${cat.color}`} />
+                  <div key={addr.id} className="flex items-center gap-4 py-4 border-b border-gray-100 last:border-0">
+                    <div className={`w-11 h-11 rounded-xl ${cat.bg} flex items-center justify-center shrink-0`}>
+                      <Icon className={`w-5 h-5 ${cat.color}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                      <p className="text-sm font-semibold text-gray-600 flex items-center gap-2">
                         {addr.category || 'Saved'}
-                        {addr.is_default && <span className="text-water-500 text-[10px] font-bold">Default</span>}
-                        {addr.lat && addr.lng && <span className="text-green-500 text-[10px]">📍 pinned</span>}
+                        {(addr.is_default || (addr.lat && addr.lng)) && <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${addr.is_default ? 'bg-blue-50 text-water-600' : 'bg-green-50 text-green-700'}`}>{addr.is_default ? 'Default address' : 'Pinned'}</span>}
                       </p>
-                      <p className="text-sm text-gray-700 truncate">{addr.address}</p>
+                      <p className="text-base text-gray-700 truncate mt-1">{addr.address}</p>
                     </div>
-                    <button onClick={() => handleDeleteAddress(addr.id)} className="text-gray-300 hover:text-red-400 transition-colors shrink-0">
-                      <Trash2 className="w-4 h-4" />
+                    <button onClick={() => handleDeleteAddress(addr.id)} aria-label="Delete saved address" className="w-11 h-11 flex items-center justify-center rounded-xl text-red-300 hover:bg-red-50 hover:text-red-600 transition-colors shrink-0">
+                      <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
                 )
@@ -378,10 +377,10 @@ export default function ProfilePage() {
         </div>
 
         {/* Quick Links */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <h2 className="font-semibold text-gray-900 text-sm mb-3">Quick Links</h2>
+        <div className="bg-white rounded-3xl border border-gray-200 p-6 sm:p-8">
+          <h2 className="font-bold text-gray-900 text-lg mb-4">Quick Links</h2>
           <div className="space-y-1">
-            <Link href="/orders" className="flex items-center justify-between py-2.5 text-sm text-gray-700 hover:text-water-600 transition-colors">
+            <Link href="/orders" className="flex min-h-12 items-center justify-between text-base text-gray-700 hover:text-water-600 transition-colors">
               <span>My Orders</span>
               <ChevronRight className="w-4 h-4 text-gray-300" />
             </Link>
@@ -391,7 +390,7 @@ export default function ProfilePage() {
         {/* Sign Out */}
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 border-red-100 text-red-500 font-semibold text-sm hover:bg-red-50 transition-colors"
+          className="w-full min-h-16 flex items-center justify-center gap-2 rounded-2xl border-2 border-red-100 text-red-500 font-semibold text-base hover:bg-red-50 transition-colors"
         >
           <LogOut className="w-4 h-4" />
           Sign Out

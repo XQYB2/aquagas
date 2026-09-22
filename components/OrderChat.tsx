@@ -20,12 +20,13 @@ type Props = {
   currentRole: 'customer' | 'provider'
   otherPartyName: string
   orderStatus: string
+  defaultOpen?: boolean
 }
 
 const TYPING_TIMEOUT = 3000
 
-export function OrderChat({ orderId, currentUserId, currentRole, otherPartyName, orderStatus }: Props) {
-  const [open, setOpen] = useState(false)
+export function OrderChat({ orderId, currentUserId, currentRole, otherPartyName, orderStatus, defaultOpen = false }: Props) {
+  const [open, setOpen] = useState(defaultOpen)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
@@ -253,7 +254,7 @@ export function OrderChat({ orderId, currentUserId, currentRole, otherPartyName,
 
       {/* Messages + input — only shown when open */}
       {open && <div className="border-t border-gray-100" />}
-      {open && <div className="h-64 overflow-y-auto p-4 space-y-3 bg-gray-50">
+      {open && <div className="h-72 sm:h-80 overflow-y-auto p-4 sm:p-5 space-y-3 bg-gray-50">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-2">
             <MessageCircle className="w-7 h-7 text-gray-200" />
@@ -289,9 +290,9 @@ export function OrderChat({ orderId, currentUserId, currentRole, otherPartyName,
         {otherTyping && (
           <div className="flex justify-start">
             <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm flex items-center gap-1">
-              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '180ms' }} />
+              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '360ms' }} />
             </div>
           </div>
         )}

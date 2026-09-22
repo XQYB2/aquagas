@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Store, Users, ShoppingBag,
-  BarChart3, Settings, LogOut, Menu, X, Shield,
+  BarChart3, Settings, LogOut, Menu, X, Shield, WalletCards, Receipt as ReceiptText, ScrollText, Bell,
 } from 'lucide-react'
 import { useAdmin } from '@/lib/admin-context'
 import { useState } from 'react'
@@ -14,6 +14,10 @@ const NAV = [
   { href: '/admin/providers',  icon: Store,           label: 'Providers' },
   { href: '/admin/customers',  icon: Users,           label: 'Customers' },
   { href: '/admin/orders',     icon: ShoppingBag,     label: 'All Orders' },
+  { href: '/admin/payouts',    icon: WalletCards,     label: 'Provider Payouts' },
+  { href: '/admin/refunds',    icon: ReceiptText,     label: 'QR Ph Refunds' },
+  { href: '/admin/notifications', icon: Bell,         label: 'Notifications' },
+  { href: '/admin/audit',      icon: ScrollText,      label: 'Audit Log' },
   { href: '/admin/reports',    icon: BarChart3,       label: 'Reports' },
   { href: '/admin/settings',   icon: Settings,        label: 'Settings' },
 ]

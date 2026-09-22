@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useProvider } from '@/lib/provider-context'
 import { OrderStatusBadge } from '@/components/provider/OrderStatusBadge'
 import { ChevronRight, Search, Download } from 'lucide-react'
@@ -49,6 +49,8 @@ export default function ProviderOrdersPage() {
   const { orders } = useProvider()
   const [tab, setTab] = useState<Tab>('all')
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   const counts: Record<Tab, number> = useMemo(() => ({
     all:              orders.length,
@@ -68,11 +70,15 @@ export default function ProviderOrdersPage() {
       .filter(o => !search || o.customer_name.toLowerCase().includes(search.toLowerCase()) || o.id.includes(search))
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
   }, [orders, tab, search])
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const paginatedOrders = filtered.slice((page - 1) * pageSize, page * pageSize)
+  useEffect(() => setPage(1), [tab, search])
+  useEffect(() => { if (page > pageCount) setPage(pageCount) }, [page, pageCount])
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Orders</h1>
+        <div><h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Orders</h1><p className="mt-1 text-sm text-gray-500">Newest orders appear first.</p></div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => exportCSV(filtered)}
@@ -126,9 +132,12 @@ export default function ProviderOrdersPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map(order => (
+          {paginatedOrders.map(order => (
             <OrderRow key={order.id} order={order} />
           ))}
+          {pageCount > 1 && <nav aria-label="Orders pagination" className="flex items-center gap-2 overflow-x-auto pt-5 pb-2">
+            {Array.from({ length: pageCount }, (_, index) => index + 1).map(number => <button key={number} onClick={() => setPage(number)} aria-current={page === number ? 'page' : undefined} className={`h-10 min-w-10 rounded-xl border px-3 text-sm font-bold ${page === number ? 'border-water-500 bg-water-500 text-white' : 'border-gray-200 bg-white text-gray-600 hover:border-water-300'}`}>{number}</button>)}
+          </nav>}
         </div>
       )}
     </div>
@@ -148,7 +157,7 @@ function OrderRow({ order }: { order: ProviderOrder }) {
 
   return (
     <Link href={`/provider/orders/${order.id}`}>
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 hover:shadow-sm hover:border-gray-200 transition-all group">
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 hover:shadow-md hover:border-gray-200 transition-all group">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">

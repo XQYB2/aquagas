@@ -4,6 +4,7 @@ import { ArrowRight, Droplets, Flame, MapPin, ShieldCheck } from 'lucide-react'
 import { HowAquaGasWorks } from '@/components/HowAquaGasWorks'
 import { PublicFooter } from '@/components/public/PublicFooter'
 import { PublicHeader } from '@/components/public/PublicHeader'
+import { LandingGuestOnly } from '@/components/public/LandingGuestOnly'
 
 export const metadata: Metadata = {
   title: 'AquaGas | On-Demand Water & LPG Delivery',
@@ -38,6 +39,7 @@ export default function HomePage() {
   const providerAppUrl = process.env.NEXT_PUBLIC_PROVIDER_APP_URL
 
   return (
+    <LandingGuestOnly>
     <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900">
       <PublicHeader />
 
@@ -159,6 +161,7 @@ export default function HomePage() {
 
       <PublicFooter />
     </div>
+    </LandingGuestOnly>
   )
 }
 

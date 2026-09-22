@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Circle, useMapEvents, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import { LocateFixed } from 'lucide-react'
 
 const deliveryIcon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -106,8 +107,8 @@ export function AddressPicker({ lat, lng, storeCoord = null, radiusKm = 15, onCh
   }
 
   function handleReject(reason: string) {
-    if (reason === 'outside_ph') showToast('📍 Location must be within the Philippines')
-    else showToast(`📍 Location is outside the ${radiusKm}km delivery range`)
+    if (reason === 'outside_ph') showToast('Location must be within the Philippines')
+    else showToast(`Location is outside the ${radiusKm}km delivery range`)
   }
 
   async function reverseGeocode(lat: number, lng: number) {
@@ -139,14 +140,14 @@ export function AddressPicker({ lat, lng, storeCoord = null, radiusKm = 15, onCh
       pos => {
         const { latitude, longitude } = pos.coords
         if (!isInPhilippines(latitude, longitude)) {
-          showToast('📍 Your location is not within the Philippines')
+          showToast('Your location is not within the Philippines')
           setLocating(false)
           return
         }
         if (storeCoord) {
           const dist = haversineKm(storeCoord.lat, storeCoord.lng, latitude, longitude)
           if (dist > radiusKm) {
-            showToast(`📍 Your location is ${dist.toFixed(1)}km from the store — outside the ${radiusKm}km delivery range`)
+            showToast(`Your location is ${dist.toFixed(1)}km from the store — outside the ${radiusKm}km delivery range`)
             setLocating(false)
             return
           }
@@ -175,7 +176,7 @@ export function AddressPicker({ lat, lng, storeCoord = null, radiusKm = 15, onCh
           disabled={locating}
           className="text-xs text-water-600 font-semibold hover:underline flex items-center gap-1 disabled:opacity-50"
         >
-          {locating ? '…locating' : '📍 Use my location'}
+          <LocateFixed className="h-3.5 w-3.5" />{locating ? 'Locating…' : 'Use my location'}
         </button>
       </div>
       <div className="h-52 rounded-xl overflow-hidden border border-gray-200 relative mb-1">

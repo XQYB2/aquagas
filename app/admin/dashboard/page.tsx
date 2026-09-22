@@ -135,7 +135,7 @@ export default function AdminDashboardPage() {
               {recentOrders.map(order => (
                 <tr key={order.id} className="hover:bg-gray-50 transition-colors group">
                   <td className="py-3 pr-4">
-                    <Link href={`/admin/orders/${order.id}`} className="font-mono text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+                    <Link href="/admin/orders" className="font-mono text-xs font-semibold text-indigo-600 hover:text-indigo-700" title="Open order management">
                       #{order.id.slice(-6).toUpperCase()}
                     </Link>
                   </td>

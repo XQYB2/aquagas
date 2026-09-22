@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import { LocateFixed } from 'lucide-react'
 
 const customerIcon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -14,7 +15,7 @@ const customerIcon = L.icon({
 })
 
 const storeIcon = L.divIcon({
-  html: `<div style="background:#0ea5e9;width:32px;height:32px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;">🏪</div>`,
+  html: `<div style="background:#0ea5e9;width:32px;height:32px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 10l2-6h14l2 6"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></div>`,
   className: '',
   iconSize: [32, 32],
   iconAnchor: [16, 16],
@@ -87,7 +88,7 @@ export function OrdersMap({ storeLat, storeLng, storeName, orders }: Props) {
         {locating ? (
           <span className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin inline-block" />
         ) : (
-          <span>📍</span>
+          <LocateFixed className="h-3.5 w-3.5" />
         )}
         My Location
       </button>

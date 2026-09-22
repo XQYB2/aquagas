@@ -81,7 +81,7 @@ const ProviderContext = createContext<ProviderState & {
   updateProduct: (id: string, updates: Partial<ProviderProduct>) => void
   addProduct: (product: Omit<ProviderProduct, 'id' | 'provider_id'>) => void
   deleteProduct: (id: string) => void
-  updateOrderStatus: (id: string, status: OrderStatus, extra?: { estimated_delivery?: string; cancel_reason?: string }) => void
+  updateOrderStatus: (id: string, status: OrderStatus, extra?: { estimated_delivery?: string; cancel_reason?: string }) => Promise<void>
 }>({
   store: null, products: [], orders: [], isLoggedIn: false, loading: true,
   login: async () => false,
@@ -90,7 +90,7 @@ const ProviderContext = createContext<ProviderState & {
   updateProduct: () => {},
   addProduct: () => {},
   deleteProduct: () => {},
-  updateOrderStatus: () => {},
+  updateOrderStatus: async () => {},
 })
 
 export function ProviderAuthProvider({ children }: { children: React.ReactNode }) {
@@ -206,7 +206,7 @@ export function ProviderAuthProvider({ children }: { children: React.ReactNode }
     const customerIds = Array.from(new Set(orderRows.map((o: any) => o.customer_id).filter(Boolean)))
 
     const [{ data: itemRows }, { data: profileRows }, { data: providerRow }] = await Promise.all([
-      supabase.from('order_items').select('id, order_id, quantity, unit_price, products(name)').in('order_id', orderIds),
+      supabase.from('order_items').select('id, order_id, product_name, quantity, unit_price, products(name)').in('order_id', orderIds),
       supabase.from('profiles').select('id, full_name, phone').in('id', customerIds),
       supabase.from('providers').select('delivery_fee').eq('id', providerId).single(),
     ])
@@ -234,7 +234,7 @@ export function ProviderAuthProvider({ children }: { children: React.ReactNode }
       updated_at: o.updated_at,
       items: (itemRows || [])
         .filter((i: any) => i.order_id === o.id)
-        .map((i: any) => ({ id: i.id, product_name: i.products?.name || 'Item', quantity: i.quantity, unit_price: i.unit_price })),
+        .map((i: any) => ({ id: i.id, product_name: i.product_name || i.products?.name || 'Product unavailable', quantity: i.quantity, unit_price: i.unit_price })),
       }
     })
   }

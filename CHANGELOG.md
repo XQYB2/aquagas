@@ -1,5 +1,60 @@
 # Changelog
 
+### Customer Mobile Parity (2026-09-22)
+
+- Added store-product sorting by recommended order, highest/lowest price, and normalized package amount across milliliters, liters, gallons, grams, and kilograms.
+- Added provider cancellation reasons to customer order details so the in-app explanation matches the cancellation push notification.
+- Added saved-store controls backed by synchronized customer favorites on both mobile and website.
+- Added paid QR Ph receipt references to mobile order details.
+- Kept mobile order, notification, offline cart, reorder, review, tracking, and AquaBot flows aligned with their website counterparts.
+
+### Provider Mobile Parity (2026-09-22)
+
+- Added a provider wallet with available, pending, paid-out, and platform-fee totals, plus payout requests and transfer history.
+- Added shop analytics for AquaGas and outside-system sales, daily/weekly/monthly periods, CSV sharing, and manual cash/GCash/QR Ph sale recording with optional stock reduction.
+- Added standardized product-unit controls, stock entry, and product image validation below 10 MB.
+- Added required cancellation reasons, customer-visible cancellation details, customer chat placement, and an on-demand collapsed delivery map.
+- Added low-stock and out-of-stock entries to the provider notification center.
+
+## Unreleased — 2026-09-22
+
+### Customer Website
+
+- Redesigned customer marketplace surfaces with a wider responsive canvas, larger navigation, stronger typography, larger store imagery, and responsive store, product, and order grids.
+- Added sticky store-category navigation plus focused ratings/reviews and store-information overlays.
+- Moved customer-to-provider order chat directly below store contact details and expanded it by default.
+- Enlarged AquaBot and added customer-mobile recommendation prompts and AI cart actions to the website experience.
+- Replaced the redundant store navigation with product search and Water/LPG filtering.
+- Added order search and status filtering, plus a customer notification center with an unread navbar badge.
+- Enlarged the cart and store-information layouts and made store maps load only when requested.
+- Replaced customer-facing emoji symbols with consistent Lucide interface icons.
+- Added durable product and interface guidance in `PRODUCT.md` and `DESIGN.md`.
+- Added store-product sorting by price and normalized package amount, including milliliters, liters, gallons, grams, and kilograms.
+
+### Provider Website
+
+- Expanded provider workspaces and order cards, kept orders sorted newest-first, and added numbered pagination with 10 orders per page.
+- Moved customer chat directly below customer information and added an on-demand collapsible delivery map.
+- Required a cancellation reason and included it in the customer order-cancellation push notification.
+- Added product-image type and 10 MB size validation plus standardized Water and LPG unit dropdowns.
+- Added a provider wallet for centrally collected QR Ph earnings, pending/available balance separation, commission visibility, payout requests, and transfer history.
+- Added provider shop analytics with day/week/month/custom ranges, previous-period comparison, daily sales visualization, CSV export, and manual outside-system sales with optional atomic inventory reduction.
+
+### Admin Panel
+
+- Reworked admin loading to fetch providers, profiles, and orders independently so fragile relationship joins no longer blank the dashboard.
+- Aligned admin order filters and badges with all live provider order statuses.
+- Fixed dashboard links that targeted a missing order-detail route and widened the admin workspace.
+- Changed platform settings to a real database upsert with visible save-error feedback.
+- Added a provider payout queue with requested, processing, completed, and rejected states plus mandatory transfer references for completed payouts.
+- Moved admin data loading behind an authenticated service-role endpoint so Row Level Security no longer hides customers, orders, providers, or order items from authorized admins; auth accounts missing legacy profile rows are also surfaced.
+- Replaced mock administrator accounts with Supabase email invitations, owner-controlled roles, and account deactivation.
+- Added database audit logging for provider, customer, order, settings, refund, and payout changes.
+- Added a QR Ph refund case workflow with processing, completion, rejection, and external reference tracking.
+- Added provider business-permit and ID expiration dates with expiring/expired document notifications.
+- Added custom report date ranges while preserving downloadable revenue and provider CSV reports.
+- Added an admin notification center for provider approvals, stalled QR Ph payments, expiring documents, and elevated provider cancellation rates.
+
 ## Unreleased — 2026-09-21
 
 ### Customer Mobile

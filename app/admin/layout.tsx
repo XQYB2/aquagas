@@ -34,7 +34,7 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen bg-gray-50">
       <AdminSidebar />
       <main className="flex-1 md:ml-60 pt-14 md:pt-0 min-h-screen overflow-x-hidden">
-        <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6 lg:py-8">
           {children}
         </div>
       </main>

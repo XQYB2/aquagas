@@ -1,0 +1,12 @@
+'use client'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { RefreshCw, ScrollText } from 'lucide-react'
+
+type Log = { id: number; action: string; entity_type: string; entity_id: string | null; created_at: string; details: Record<string, unknown> }
+export default function AuditPage() {
+  const [logs, setLogs] = useState<Log[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState('')
+  async function load() { setLoading(true); const { data, error } = await supabase.from('admin_audit_logs').select('*').order('created_at', { ascending: false }).limit(250); setLogs((data || []) as Log[]); setError(error?.message || ''); setLoading(false) }
+  useEffect(() => { load() }, [])
+  return <div><div className="mb-6 flex items-end justify-between"><div><h1 className="text-3xl font-black text-gray-950">Audit log</h1><p className="mt-2 text-sm text-gray-500">A permanent record of administrative changes.</p></div><button onClick={load} className="flex min-h-11 items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-bold"><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />Refresh</button></div>{error && <p className="mb-4 rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>}{!loading && logs.length === 0 ? <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-16 text-center"><ScrollText className="mx-auto h-10 w-10 text-gray-300" /><p className="mt-3 font-bold">No recorded changes yet</p></div> : <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-gray-50 text-left text-xs uppercase text-gray-500"><tr><th className="px-4 py-3">Time</th><th className="px-4 py-3">Action</th><th className="px-4 py-3">Record</th><th className="px-4 py-3">Details</th></tr></thead><tbody className="divide-y divide-gray-100">{logs.map(log => <tr key={log.id}><td className="whitespace-nowrap px-4 py-3 text-gray-500">{new Date(log.created_at).toLocaleString('en-PH')}</td><td className="px-4 py-3 font-bold text-gray-900">{log.action.replaceAll('_', ' ')}</td><td className="px-4 py-3 text-gray-600">{log.entity_type} {log.entity_id?.slice(-8)}</td><td className="max-w-md truncate px-4 py-3 text-xs text-gray-400">{JSON.stringify(log.details)}</td></tr>)}</tbody></table></div></div>}</div>
+}

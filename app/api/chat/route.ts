@@ -15,7 +15,7 @@ Your role:
 - Answer questions about pricing, delivery fees, and estimated delivery times
 - Guide users on placing orders, tracking deliveries, and managing their account
 - Explain product differences (alkaline vs distilled water, LPG tank sizes: 11kg, 22kg)
-- When a customer asks to add a product to cart, respond with CART_ACTION JSON on its own line
+- When a customer asks for a product recommendation, asks to find a product, or asks to add/buy/order a product, recommend one matching available product and respond with CART_ACTION JSON on its own line
 
 Tone: Friendly, concise. 2-4 sentences max or a short list.
 Never discuss topics unrelated to water/LPG delivery or the AquaGas app.
@@ -27,10 +27,11 @@ FORMATTING RULES (strictly follow):
 - Order info format: "Order #XXXXXX — Status (Store Name)" on its own line
 
 CART ACTION RULES:
-- When the user asks to add a specific product to cart and it exists in CONTEXT, include this on its own line at the END of your response:
+- When the user asks for a product recommendation, asks to find a product, or asks to add/buy/order a specific product and it exists in CONTEXT, include this on its own line at the END of your response:
   CART_ACTION:{"product_id":"<id>","product_name":"<name>","price":<number>,"unit":"<unit>","category":"<water|lpg>","provider_id":"<id>","provider_name":"<name>","delivery_fee":<number>}
 - Only include CART_ACTION if you have the actual product_id from the CONTEXT. Never guess IDs.
-- If multiple products match, pick the cheapest available one and mention it.`
+- If multiple products match, pick the cheapest available one and mention it.
+- Tell the customer they can use the Add to cart button shown below your reply. Do not claim the item was already added.`
 
 async function getContext(userMessage: string, userId?: string): Promise<string> {
   const sb = createClient(
@@ -106,16 +107,14 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS })
 }
 
-// Fallback chain: cheapest first, escalate on rate limit (429)
-// Only models confirmed to have quota on this API key
+// Prefer the current low-cost stable model. Continue on temporary demand,
+// quota, network, or model-availability failures.
 const MODEL_FALLBACKS = [
-  'gemini-2.5-flash-lite',
-  'gemini-3.1-flash-lite',
   'gemini-3.5-flash-lite',
-  'gemini-2.5-flash',
-  'gemini-3-flash',
+  'gemini-3.1-flash-lite',
   'gemini-3.5-flash',
   'gemini-3.6-flash',
+  'gemini-2.5-flash',
 ]
 
 function isRetryableError(err: any): boolean {
@@ -123,9 +122,16 @@ function isRetryableError(err: any): boolean {
   return (
     err?.status === 429 ||
     err?.status === 404 ||
+    err?.status === 503 ||
+    err?.status >= 500 ||
     msg.includes('429') ||
+    msg.includes('503') ||
     msg.includes('quota') ||
     msg.includes('rate limit') ||
+    msg.includes('high demand') ||
+    msg.includes('service unavailable') ||
+    msg.includes('fetch failed') ||
+    msg.includes('network') ||
     msg.includes('resource_exhausted') ||
     msg.includes('not found') ||
     msg.includes('does not exist') ||
@@ -185,7 +191,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ reply, cartAction }, { headers: CORS_HEADERS })
       } catch (err: any) {
         if (isRetryableError(err)) {
-          console.warn(`[AquaBot] ${modelName} skipped: ${err?.message?.slice(0, 80)}`)
+          console.warn(`[AquaBot] ${modelName} unavailable (${err?.status || 'network'}); trying fallback`)
           lastErr = err
           continue
         }
@@ -193,7 +199,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.error('[AquaBot] all models rate limited:', lastErr?.message)
+    console.error('[AquaBot] all configured models unavailable:', lastErr?.status || lastErr?.message)
     return NextResponse.json(
       { error: 'AquaBot is busy right now. Please try again in a moment.' },
       { status: 429, headers: CORS_HEADERS }

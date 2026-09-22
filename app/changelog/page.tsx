@@ -242,21 +242,21 @@ export default function ChangelogPage() {
     <div className="flex min-h-screen flex-col bg-gray-50">
       <PublicHeader />
 
-      <main className="flex-1 px-4 py-8 sm:py-12">
-        <div className="mx-auto max-w-2xl">
+      <main className="flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <div className="mx-auto max-w-6xl">
           <BackLink href="/" label="Back to home" variant="inline" className="mb-5" />
 
-          <h1 className="mb-1 text-3xl font-bold text-gray-900">What&apos;s new</h1>
-          <p className="mb-8 text-sm text-gray-500 sm:mb-10">All notable changes to AquaGas are documented here.</p>
+          <h1 className="mb-2 text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">What&apos;s new</h1>
+          <p className="mb-8 text-base text-gray-500 sm:mb-10">All notable changes to AquaGas are documented here.</p>
 
         {/* Releases */}
         <div className="space-y-6">
           {RELEASES.map(release => (
-            <article key={release.version} className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+            <article key={release.version} className="overflow-hidden rounded-[1.75rem] border border-gray-100 bg-white shadow-sm">
               {/* Release header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
+              <div className="flex items-center justify-between border-b border-gray-50 px-6 py-5 sm:px-8">
                 <div className="flex items-center gap-3">
-                  <span className="text-lg font-bold text-gray-900">{release.version === 'Next' ? 'Next' : `v${release.version}`}</span>
+                  <span className="text-xl font-bold text-gray-900">{release.version === 'Next' ? 'Next' : `v${release.version}`}</span>
                   <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${release.labelColor}`}>
                     {release.label}
                   </span>
@@ -265,7 +265,7 @@ export default function ChangelogPage() {
               </div>
 
               {/* Changes */}
-              <div className="px-6 py-5 space-y-5">
+              <div className="space-y-6 px-6 py-6 sm:px-8 sm:py-7">
                 {release.changes.map((group, gi) => {
                   const style = TYPE_STYLE[group.type] ?? TYPE_STYLE.new
                   return (
@@ -276,7 +276,7 @@ export default function ChangelogPage() {
                       </span>
                       <ul className="space-y-2">
                         {group.items.map((item, ii) => (
-                          <li key={ii} className="flex items-start gap-2.5 text-sm text-gray-600">
+                          <li key={ii} className="flex items-start gap-2.5 text-base leading-7 text-gray-600">
                             <span className="mt-1.5 w-1 h-1 rounded-full bg-gray-300 shrink-0" />
                             {item}
                           </li>

@@ -72,7 +72,7 @@ export function StatusStepper({
     <div className="flex flex-col gap-0">
       {estimatedDelivery && (
         <div className="mb-4 bg-water-50 border border-water-100 rounded-xl px-4 py-3 flex items-center gap-2">
-          <span className="text-lg">🕐</span>
+          <Clock3 className="h-5 w-5 text-water-600" />
           <div>
             <p className="text-xs text-water-600 font-semibold uppercase tracking-wide">Estimated Delivery</p>
             <p className="text-sm text-water-800 font-medium">{estimatedDelivery}</p>
@@ -92,7 +92,7 @@ export function StatusStepper({
                 active ? 'bg-white border-water-500 text-water-600' :
                          'bg-white border-gray-200 text-gray-300'
               }`}>
-                {done ? '✓' : idx + 1}
+                {done ? <Check className="h-4 w-4" /> : idx + 1}
               </div>
               {idx < steps.length - 1 && (
                 <div className={`w-0.5 h-8 ${done ? 'bg-water-400' : 'bg-gray-200'}`} />
@@ -115,3 +115,4 @@ export function StatusStepper({
     </div>
   )
 }
+import { Check, Clock3 } from 'lucide-react'

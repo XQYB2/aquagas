@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { authenticatedJsonHeaders } from '@/lib/authenticated-fetch'
-import { ArrowRight, MapPin, Truck, Banknote, CheckCircle, BookmarkPlus, Bookmark, Home, Briefcase, Heart, MoreHorizontal, Plus, Minus, Trash2, CalendarClock } from 'lucide-react'
+import { ArrowRight, MapPin, Truck, Banknote, CheckCircle, BookmarkPlus, Bookmark, Home, Briefcase, Heart, MoreHorizontal, Plus, Minus, Trash2, CalendarClock, ShoppingCart } from 'lucide-react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { BackLink } from '@/components/navigation/BackLink'
@@ -254,8 +254,8 @@ export default function CheckoutPage() {
 
   if (state.items.length === 0) {
     return (
-      <div className="max-w-md mx-auto px-4 py-20 text-center">
-        <p className="text-5xl mb-4">🛒</p>
+      <div className="max-w-6xl mx-auto px-4 py-20 text-center">
+        <ShoppingCart className="mx-auto mb-4 h-14 w-14 text-gray-300" />
         <h2 className="text-xl font-bold mb-2 text-gray-900">Your cart is empty</h2>
         <Link href="/home" className="inline-block mt-4 bg-water-500 text-white font-semibold px-6 py-3 rounded-xl hover:bg-water-600 transition-colors">
           Browse Stores
@@ -265,10 +265,10 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 pb-32">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-32">
       <div className="flex items-center gap-3 mb-8">
         <BackLink href="/home" label="Back to stores" variant="surface" iconOnly />
-        <h1 className="text-xl font-bold text-gray-900">Checkout</h1>
+        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900">Your Cart</h1>
       </div>
 
       {!hasPhone && (
@@ -286,7 +286,7 @@ export default function CheckoutPage() {
 
       <div className="space-y-4">
         {/* Order Summary */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-7">
           <h2 className="font-semibold text-gray-900 mb-4">Order from {state.provider_name}</h2>
           <div className="space-y-3 mb-4">
             {state.items.map(item => (

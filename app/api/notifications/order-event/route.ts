@@ -5,7 +5,7 @@ const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SU
   auth: { persistSession: false },
 })
 
-type OrderRecord = { id: string; customer_id: string; provider_id: string; status: string; payment_status?: string; total_amount?: number }
+type OrderRecord = { id: string; customer_id: string; provider_id: string; status: string; payment_status?: string; total_amount?: number; cancel_reason?: string }
 
 export async function POST(req: NextRequest) {
   const configuredSecret = process.env.ORDER_NOTIFICATION_WEBHOOK_SECRET
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     })
   } else if (payload.type === 'UPDATE') {
     if (order.status !== payload.old_record?.status) recipients.push({
-      userId: order.customer_id, role: 'customer', title: statusTitle(order.status), body: statusBody(order.status),
+      userId: order.customer_id, role: 'customer', title: statusTitle(order.status), body: statusBody(order.status, order.cancel_reason),
     })
     if (order.payment_status === 'paid' && payload.old_record?.payment_status !== 'paid') {
       recipients.push({ userId: order.customer_id, role: 'customer', title: 'Payment confirmed', body: 'Your QR Ph payment was received.' })
@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
 function statusTitle(status: string) {
   return ({ confirmed: 'Order confirmed', being_prepared: 'Order being prepared', out_for_delivery: 'Order on the way', delivered: 'Order delivered', cancelled: 'Order cancelled' } as Record<string, string>)[status] || 'Order updated'
 }
-function statusBody(status: string) {
-  return ({ confirmed: 'The provider accepted your order.', being_prepared: 'Your items are being prepared.', out_for_delivery: 'Your delivery is on its way.', delivered: 'Your order was delivered. You can now leave a review.', cancelled: 'Your order was cancelled.' } as Record<string, string>)[status] || 'Open AquaGas to see the latest status.'
+function statusBody(status: string, cancelReason?: string) {
+  if (status === 'cancelled') return cancelReason ? `Your order was cancelled: ${cancelReason}` : 'Your order was cancelled.'
+  return ({ confirmed: 'The provider accepted your order.', being_prepared: 'Your items are being prepared.', out_for_delivery: 'Your delivery is on its way.', delivered: 'Your order was delivered. You can now leave a review.' } as Record<string, string>)[status] || 'Open AquaGas to see the latest status.'
 }
