@@ -15,6 +15,7 @@ function withServerTimeout<T>(request: PromiseLike<T>, timeoutMs: number): Promi
 export async function GET(req: NextRequest) {
   const { origin, searchParams } = new URL(req.url)
   const next = searchParams.get('next')
+  const flow = searchParams.get('flow')
   const code = searchParams.get('code')
 
   // Mobile app flow — return a page that redirects the hash to the aquagas:// deep link
@@ -71,6 +72,16 @@ export async function GET(req: NextRequest) {
     }
 
     if (data.session) {
+      if (flow === 'signup') {
+        const createdAt = Date.parse(data.session.user.created_at)
+        const existingAccount = Number.isFinite(createdAt) && Date.now() - createdAt > 2 * 60 * 1000
+
+        if (existingAccount) {
+          await supabase.auth.signOut()
+          return NextResponse.redirect(`${origin}/login?notice=google_account_exists`)
+        }
+      }
+
       let profile = null
       try {
         const profileResult = await withServerTimeout(

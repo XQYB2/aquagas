@@ -37,7 +37,7 @@ export default function RegisterPage() {
       const { data, error } = await withTimeout(supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback?flow=signup`,
           skipBrowserRedirect: true,
           queryParams: {
             access_type: 'offline',

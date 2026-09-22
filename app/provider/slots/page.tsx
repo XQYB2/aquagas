@@ -151,15 +151,15 @@ export default function ProviderSlotsPage() {
   }
 
   return (
-    <div className="max-w-2xl">
-      <div className="flex items-center justify-between mb-6">
+    <div className="w-full max-w-7xl">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Batch Delivery Slots</h1>
           <p className="text-xs text-gray-400 mt-0.5">Free scheduled delivery — group orders into time slots</p>
         </div>
         <button
           onClick={() => setAdding(a => !a)}
-          className="flex items-center gap-2 px-4 py-2 bg-water-500 hover:bg-water-600 text-white rounded-xl text-sm font-semibold transition-colors"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-water-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-water-600 sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           Add Slot
@@ -170,7 +170,7 @@ export default function ProviderSlotsPage() {
       {adding && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4 space-y-4">
           <h2 className="font-semibold text-gray-900 text-sm">New Recurring Slot</h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Day</label>
               <select
@@ -239,7 +239,7 @@ export default function ProviderSlotsPage() {
           <p className="text-gray-400 text-sm mt-1">Add a recurring slot to enable free scheduled delivery for customers.</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-3 xl:grid-cols-2">
           {slots.map(slot => {
             const next = nextOccurrence(slot.day_of_week, slot.time_hhmm)
             const cutoffTime = new Date(next.getTime() - slot.cutoff_minutes * 60000)
@@ -251,11 +251,11 @@ export default function ProviderSlotsPage() {
               <div key={slot.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${slot.is_active ? 'bg-water-50' : 'bg-gray-50'}`}>
                         <CalendarClock className={`w-5 h-5 ${slot.is_active ? 'text-water-500' : 'text-gray-400'}`} />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-semibold text-gray-900 text-sm">
                           Every {DAYS[slot.day_of_week]} at {slot.time_hhmm}
                         </p>
@@ -279,7 +279,7 @@ export default function ProviderSlotsPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
+                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500">
                     <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> Max {slot.max_orders} orders</span>
                     <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {slot.cutoff_minutes} min cutoff</span>
                     <span className="text-green-600 font-semibold">Free delivery</span>

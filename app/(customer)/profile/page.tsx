@@ -139,21 +139,21 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900 mb-8">My Profile</h1>
+    <div className="mx-auto w-full min-w-0 max-w-7xl px-[max(1rem,env(safe-area-inset-left))] py-6 sm:px-6 sm:py-10 lg:px-8">
+      <h1 className="mb-6 text-3xl font-extrabold tracking-tight text-gray-900 sm:mb-8 sm:text-4xl">My Profile</h1>
 
-      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+      <div className="grid min-w-0 grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2 lg:items-start">
         {/* User Info */}
-        <div className="bg-white rounded-3xl border border-gray-200 p-6 sm:p-8">
-          <div className="flex items-center gap-5 mb-7">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-water-400 to-water-600 flex items-center justify-center">
+        <div className="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 sm:rounded-3xl sm:p-8">
+          <div className="mb-6 flex min-w-0 items-center gap-4 sm:mb-7 sm:gap-5">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-water-400 to-water-600 sm:h-20 sm:w-20">
               <span className="text-white text-2xl font-bold">
                 {(profile?.full_name || user?.email || 'G')[0].toUpperCase()}
               </span>
             </div>
-            <div>
-              <p className="text-xl font-bold text-gray-900">{profile?.full_name || 'Your Name'}</p>
-              <p className="text-sm text-gray-400">{user?.email || '—'}</p>
+            <div className="min-w-0">
+              <p className="truncate text-lg font-bold text-gray-900 sm:text-xl">{profile?.full_name || 'Your Name'}</p>
+              <p className="truncate text-sm text-gray-500">{user?.email || '—'}</p>
             </div>
           </div>
 
@@ -274,15 +274,15 @@ export default function ProfilePage() {
         </div>
 
         {/* Saved Addresses */}
-        <div className="bg-white rounded-3xl border border-gray-200 p-6 sm:p-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-bold text-gray-900 text-lg flex items-center gap-2">
+        <div className="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 sm:rounded-3xl sm:p-8">
+          <div className="mb-5 flex min-w-0 items-center justify-between gap-2 sm:mb-6">
+            <h2 className="flex min-w-0 items-center gap-2 text-base font-bold text-gray-900 sm:text-lg">
               <MapPin className="w-5 h-5 text-water-500" />
               Saved Addresses
             </h2>
             <button
               onClick={() => setAddingAddr(a => !a)}
-              className="min-h-11 px-3 text-water-600 text-sm font-semibold flex items-center gap-1 hover:text-water-700 transition-colors"
+              className="flex min-h-11 shrink-0 items-center gap-1 px-2 text-sm font-semibold text-water-600 transition-colors hover:text-water-700 sm:px-3"
             >
               <Plus className="w-4 h-4" />
               Add
@@ -355,16 +355,16 @@ export default function ProfilePage() {
                 const cat = CATEGORIES.find(c => c.value === addr.category) ?? CATEGORIES[3]
                 const Icon = cat.icon
                 return (
-                  <div key={addr.id} className="flex items-center gap-4 py-4 border-b border-gray-100 last:border-0">
-                    <div className={`w-11 h-11 rounded-xl ${cat.bg} flex items-center justify-center shrink-0`}>
+                  <div key={addr.id} className="flex min-w-0 items-start gap-3 border-b border-gray-100 py-4 last:border-0 sm:items-center sm:gap-4">
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-11 sm:w-11 ${cat.bg}`}>
                       <Icon className={`w-5 h-5 ${cat.color}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-600 flex items-center gap-2">
-                        {addr.category || 'Saved'}
+                      <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-gray-600">
+                        <span>{addr.category || 'Saved'}</span>
                         {(addr.is_default || (addr.lat && addr.lng)) && <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${addr.is_default ? 'bg-blue-50 text-water-600' : 'bg-green-50 text-green-700'}`}>{addr.is_default ? 'Default address' : 'Pinned'}</span>}
                       </p>
-                      <p className="text-base text-gray-700 truncate mt-1">{addr.address}</p>
+                      <p className="mt-1 line-clamp-2 break-words text-sm leading-5 text-gray-700 sm:text-base">{addr.address}</p>
                     </div>
                     <button onClick={() => handleDeleteAddress(addr.id)} aria-label="Delete saved address" className="w-11 h-11 flex items-center justify-center rounded-xl text-red-300 hover:bg-red-50 hover:text-red-600 transition-colors shrink-0">
                       <Trash2 className="w-5 h-5" />
@@ -377,7 +377,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Quick Links */}
-        <div className="bg-white rounded-3xl border border-gray-200 p-6 sm:p-8">
+        <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 sm:rounded-3xl sm:p-8">
           <h2 className="font-bold text-gray-900 text-lg mb-4">Quick Links</h2>
           <div className="space-y-1">
             <Link href="/orders" className="flex min-h-12 items-center justify-between text-base text-gray-700 hover:text-water-600 transition-colors">
@@ -390,7 +390,7 @@ export default function ProfilePage() {
         {/* Sign Out */}
         <button
           onClick={handleSignOut}
-          className="w-full min-h-16 flex items-center justify-center gap-2 rounded-2xl border-2 border-red-100 text-red-500 font-semibold text-base hover:bg-red-50 transition-colors"
+          className="flex min-h-14 min-w-0 w-full items-center justify-center gap-2 rounded-2xl border-2 border-red-100 px-4 text-base font-semibold text-red-500 transition-colors hover:bg-red-50 sm:min-h-16"
         >
           <LogOut className="w-4 h-4" />
           Sign Out

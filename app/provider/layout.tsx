@@ -6,7 +6,6 @@ import { ProviderAuthProvider, useProvider } from '@/lib/provider-context'
 import { ProviderSidebar } from '@/components/provider/ProviderSidebar'
 import { ProviderBot } from '@/components/provider/ProviderBot'
 import { ProviderTutorial } from '@/components/provider/ProviderTutorial'
-import { ThemeProvider } from '@/lib/theme-context'
 
 function ProviderGuard({ children }: { children: React.ReactNode }) {
   const { isLoggedIn, loading } = useProvider()
@@ -37,11 +36,11 @@ function ProviderGuard({ children }: { children: React.ReactNode }) {
 if (!isLoggedIn) return null
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="flex min-h-screen w-full min-w-0 overflow-x-clip bg-gray-50">
       <ProviderSidebar />
       {/* Main content area — offset for sidebar on desktop, top bar on mobile */}
-      <main className="flex-1 md:ml-60 pt-[calc(3.5rem+env(safe-area-inset-top))] md:pt-0 min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 lg:py-8">
+      <main className="min-h-screen min-w-0 flex-1 pt-[calc(3.5rem+env(safe-area-inset-top))] md:ml-60 md:pt-0">
+        <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 sm:py-6 lg:py-8">
           {children}
         </div>
       </main>
@@ -53,10 +52,8 @@ if (!isLoggedIn) return null
 
 export default function ProviderLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider>
       <ProviderAuthProvider>
         <ProviderGuard>{children}</ProviderGuard>
       </ProviderAuthProvider>
-    </ThemeProvider>
   )
 }

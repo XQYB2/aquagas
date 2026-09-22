@@ -138,16 +138,16 @@ export default function HomePage() {
           <div className="absolute top-4 left-1/4 w-64 h-64 rounded-full bg-white blur-3xl" />
           <div className="absolute bottom-0 right-1/4 w-48 h-48 rounded-full bg-white blur-2xl" />
         </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-24">
+        <div className="relative mx-auto max-w-7xl px-4 py-9 sm:px-6 sm:py-14 lg:px-8 md:py-24">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
               <Sparkles className="w-3.5 h-3.5" />
               Fast delivery in your area
             </div>
-            <h1 className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight mb-5">
+            <h1 className="mb-4 text-3xl font-extrabold leading-[1.08] tracking-tight sm:text-4xl md:mb-5 md:text-6xl">
               Water & Gas<br />delivered to your door
             </h1>
-            <p className="text-white/85 text-lg md:text-xl mb-9 max-w-2xl">
+            <p className="mb-6 max-w-2xl text-base text-white/85 sm:text-lg md:mb-9 md:text-xl">
               Order from local water refilling stations and LPG suppliers — fast, safe, and hassle-free.
             </p>
             <div className="relative">
@@ -157,7 +157,7 @@ export default function HomePage() {
                 placeholder="Search stores or address…"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                className="w-full h-16 pl-12 pr-4 rounded-2xl text-gray-900 bg-white shadow-xl text-base focus:outline-none focus:ring-2 focus:ring-water-300 placeholder:text-gray-400"
+                className="h-14 w-full rounded-2xl bg-white pl-12 pr-4 text-base text-gray-900 shadow-xl placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-water-300 sm:h-16"
               />
             </div>
           </div>
@@ -169,7 +169,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
 
         {/* Location banner */}
         {!locationReady ? (

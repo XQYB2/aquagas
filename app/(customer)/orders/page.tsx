@@ -146,12 +146,12 @@ export default function OrdersPage() {
   )
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900 mb-8">My Orders</h1>
+    <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <h1 className="mb-6 text-3xl font-extrabold tracking-tight text-gray-900 sm:mb-8 sm:text-4xl">My Orders</h1>
 
       <div className="mb-8 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 sm:flex-row sm:items-center">
         <label className="relative flex-1"><span className="sr-only">Search orders</span><Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search by store, product, or order number" className="h-12 w-full rounded-xl border border-gray-200 bg-white pl-12 pr-4 text-sm outline-none focus:border-water-400 focus:ring-2 focus:ring-water-100" /></label>
-        <label className="flex h-12 items-center gap-2 rounded-xl border border-gray-200 px-4"><SlidersHorizontal className="h-4 w-4 text-water-500" /><span className="sr-only">Filter by status</span><select value={statusFilter} onChange={event => setStatusFilter(event.target.value)} className="min-w-44 bg-transparent text-sm font-semibold text-gray-700 outline-none"><option value="all">All statuses</option><option value="active">Active orders</option><option value="pending_payment">Payment pending</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option></select></label>
+        <label className="flex h-12 w-full items-center gap-2 rounded-xl border border-gray-200 px-4 sm:w-auto"><SlidersHorizontal className="h-4 w-4 shrink-0 text-water-500" /><span className="sr-only">Filter by status</span><select value={statusFilter} onChange={event => setStatusFilter(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-gray-700 outline-none sm:min-w-44"><option value="all">All statuses</option><option value="active">Active orders</option><option value="pending_payment">Payment pending</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option></select></label>
       </div>
 
       {/* Active order banners */}
@@ -192,8 +192,8 @@ export default function OrdersPage() {
         {paginatedOrders.map(order => (
           <Link key={order.id} href={`/orders/${order.id}`}>
             <article className="h-full bg-white rounded-2xl border border-gray-200 p-5 sm:p-6 hover:shadow-md hover:border-water-200 transition-all group">
-              <div className="flex items-start justify-between mb-3">
-                <div>
+              <div className="mb-3 flex min-w-0 items-start justify-between gap-3">
+                <div className="min-w-0">
                   <p className="font-semibold text-gray-900 text-sm">{order.provider_name}</p>
                   <p className="text-gray-400 text-xs mt-0.5">
                     <span className="font-mono text-gray-500">#{order.id.slice(-6).toUpperCase()}</span>
@@ -204,7 +204,7 @@ export default function OrdersPage() {
                     })}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
                   <StatusBadge status={order.status as any} />
                   {order.status !== 'pending_payment' && (
                     <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />

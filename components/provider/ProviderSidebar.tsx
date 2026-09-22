@@ -9,7 +9,8 @@ import {
 import { useProvider } from '@/lib/provider-context'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useTheme } from '@/lib/theme-context'
+import { useAuth } from '@/lib/auth-context'
+import { ChatNotifications } from '@/components/ChatNotifications'
 
 const NAV = [
   { href: '/provider/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -26,8 +27,14 @@ export function ProviderSidebar() {
   const pathname = usePathname()
   const { store, logout, orders } = useProvider()
   const router = useRouter()
-  const { theme, setTheme } = useTheme()
+  const { user } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  useEffect(() => {
+    localStorage.removeItem('aq-theme')
+    document.documentElement.classList.remove('dark')
+    document.documentElement.removeAttribute('data-theme')
+  }, [])
 
   const [seenOrderIds, setSeenOrderIds] = useState<string[]>([])
   const placedOrderIds = orders.filter(o => o.status === 'placed').map(o => o.id)
@@ -71,14 +78,17 @@ export function ProviderSidebar() {
   return (
     <>
       {/* Mobile top bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] flex items-center px-4 justify-between">
+      <div className="fixed inset-x-0 top-0 z-50 flex h-[calc(3.5rem+env(safe-area-inset-top))] w-full items-center justify-between border-b border-gray-100 bg-white px-4 pt-[env(safe-area-inset-top)] md:hidden">
         <div className="flex min-w-0 items-center gap-2">
           <img src="/logo.svg" alt="AquaGas" className="w-7 h-7 rounded-lg shrink-0" />
-          <span className="truncate font-bold text-sm text-gray-900 dark:text-gray-100">{store?.store_name || 'Provider'}</span>
+          <span className="truncate font-bold text-sm text-gray-900">{store?.store_name || 'Provider'}</span>
         </div>
-        <button onClick={() => setMobileOpen(o => !o)} className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800" aria-label={mobileOpen ? 'Close provider navigation' : 'Open provider navigation'} aria-expanded={mobileOpen}>
-          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+        <div className="flex items-center">
+          {user && <ChatNotifications userId={user.id} role="provider" orderIds={orders.map(order => order.id)} />}
+          <button onClick={() => setMobileOpen(o => !o)} className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl hover:bg-gray-50" aria-label={mobileOpen ? 'Close provider navigation' : 'Open provider navigation'} aria-expanded={mobileOpen}>
+            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile overlay */}
@@ -88,23 +98,24 @@ export function ProviderSidebar() {
 
       {/* Sidebar */}
       <aside className={`
-        fixed top-0 left-0 h-[100dvh] z-40 w-60 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800
+        fixed top-0 left-0 h-[100dvh] z-40 w-[min(18rem,86vw)] bg-white border-r border-gray-100 md:w-60
         pt-[env(safe-area-inset-top)] pb-[max(env(safe-area-inset-bottom),0.75rem)]
         flex flex-col transition-transform duration-200
         md:translate-x-0
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         {/* Logo */}
-        <div className="h-16 flex items-center px-5 border-b border-gray-100 dark:border-gray-800">
-          <img src="/logo.svg" alt="AquaGas" className="w-9 h-9 rounded-xl mr-3 shrink-0" />
-          <div>
+        <div className="flex h-16 min-w-0 items-center gap-2 border-b border-gray-100 px-4">
+          <img src="/logo.svg" alt="AquaGas" className="h-9 w-9 shrink-0 rounded-xl" />
+          <div className="min-w-0 flex-1">
             <p className="text-xs font-bold"><span className="text-water-600">Aqua</span><span className="text-red-600">Gas</span></p>
-            <p className="text-xs text-gray-400 leading-tight truncate w-36">{store?.store_name || 'My Store'}</p>
+            <p className="truncate text-xs leading-tight text-gray-400">{store?.store_name || 'My Store'}</p>
           </div>
+          <div className="hidden shrink-0 md:block">{user && <ChatNotifications userId={user.id} role="provider" orderIds={orders.map(order => order.id)} />}</div>
         </div>
 
         {/* Open/Closed badge */}
-        <div className="px-5 py-3 border-b border-gray-50 dark:border-gray-800">
+        <div className="px-5 py-3 border-b border-gray-50">
           <div className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${store?.is_open ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${store?.is_open ? 'bg-green-500' : 'bg-red-400'}`} />
             {store?.is_open ? 'Store Open' : 'Store Closed'}
@@ -126,8 +137,8 @@ export function ProviderSidebar() {
                 }}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   active
-                    ? 'bg-water-50 dark:bg-water-900/30 text-water-700 dark:text-water-400 font-semibold'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
+                    ? 'bg-water-50 text-water-700 font-semibold'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
               >
                 <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-water-600' : 'text-gray-400'}`} />
@@ -142,18 +153,11 @@ export function ProviderSidebar() {
           })}
         </nav>
 
-        {/* Theme toggle + Logout */}
-        <div className="p-3 border-t border-gray-100 dark:border-gray-800 space-y-1">
-          <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100 transition-colors font-medium"
-          >
-            <span className="text-base leading-none">{theme === 'dark' ? '☀️' : '🌙'}</span>
-            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
-          </button>
+        {/* Logout */}
+        <div className="space-y-1 border-t border-gray-100 p-3">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium"
+            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-50 hover:text-red-600"
           >
             <LogOut className="w-4 h-4" />
             Sign Out

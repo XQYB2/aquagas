@@ -77,12 +77,12 @@ export default function ProviderOrdersPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div><h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Orders</h1><p className="mt-1 text-sm text-gray-500">Newest orders appear first.</p></div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <button
             onClick={() => exportCSV(filtered)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+            className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-50"
           >
             <Download className="w-4 h-4" />
             Export CSV
@@ -94,7 +94,7 @@ export default function ProviderOrdersPage() {
               placeholder="Search customer…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-water-300 placeholder:text-gray-400 w-48"
+              className="min-h-11 w-full rounded-xl border border-gray-200 py-2 pl-9 pr-4 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-water-300 sm:w-56"
             />
           </div>
         </div>

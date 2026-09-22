@@ -18,14 +18,14 @@ export function BottomNav() {
 
   return (
     <nav aria-label="Customer navigation" className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
-      <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 shadow-[0_-8px_24px_rgba(15,23,42,0.06)] px-2 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+      <div className="border-t border-gray-100 bg-white/95 px-[max(0.5rem,env(safe-area-inset-left))] pb-[max(env(safe-area-inset-bottom),0.75rem)] shadow-[0_-8px_24px_rgba(15,23,42,0.06)] backdrop-blur-md">
         <div className="grid h-[var(--mobile-nav-height)] max-w-md grid-cols-4 mx-auto">
           {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
             const isActive = pathname === href
             const isCart = href === '/checkout'
-            const iconClass = `w-5 h-5 transition-colors ${isActive ? 'text-water-600' : 'text-gray-400 dark:text-gray-500'}`
-            const labelClass = `text-[10px] font-medium ${isActive ? 'text-water-600' : 'text-gray-400 dark:text-gray-500'}`
-            const dotClass = `w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${isActive ? 'bg-water-50 dark:bg-water-900/30' : ''}`
+            const iconClass = `w-5 h-5 transition-colors ${isActive ? 'text-water-600' : 'text-gray-400'}`
+            const labelClass = `text-[10px] font-medium ${isActive ? 'text-water-600' : 'text-gray-500'}`
+            const dotClass = `w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${isActive ? 'bg-water-50' : ''}`
 
             if (isCart) {
               return (

@@ -60,9 +60,9 @@ export function OrderChat({ orderId, currentUserId, currentRole, otherPartyName,
         .order('created_at', { ascending: true })
       if (data) {
         setMessages(data)
-        // Mark unread messages from other party as read
-        const unread = data.filter(m => m.sender_id !== currentUserId && !m.is_read).map(m => m.id)
-        markAsRead(unread)
+        const unreadMessages = data.filter(m => m.sender_id !== currentUserId && !m.is_read)
+        setUnread(unreadMessages.length)
+        if (open) markAsRead(unreadMessages.map(m => m.id))
       }
     }
     loadMessages()

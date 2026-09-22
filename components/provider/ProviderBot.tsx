@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { MessageCircle, X, Send, Loader2, Sparkles, Mic, MicOff, Volume2, VolumeX } from 'lucide-react'
 import { useProvider } from '@/lib/provider-context'
-import { useTheme } from '@/lib/theme-context'
 import { supabase } from '@/lib/supabase'
 
 type Message = {
@@ -25,8 +24,6 @@ const SUGGESTIONS = [
 
 export function ProviderBot() {
   const { store, orders, products } = useProvider()
-  const { theme } = useTheme()
-  const dark = theme === 'dark'
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([WELCOME])
   const [input, setInput] = useState('')
@@ -154,21 +151,20 @@ export function ProviderBot() {
 
   const showSuggestions = messages.length === 1 && !loading
 
-  const d = dark
-  const bg = d ? '#0f172a' : '#ffffff'
-  const msgBg = d ? '#1e293b' : '#f8fafc'
-  const border = d ? '#1e3a5f' : '#dbeafe'
-  const bubbleBotBg = d ? '#1e293b' : '#ffffff'
-  const bubbleBotBorder = d ? '#334155' : '#e2e8f0'
-  const bubbleText = d ? '#e2e8f0' : '#1e293b'
-  const inputBg = d ? '#1e293b' : '#ffffff'
-  const inputBorder = d ? '#334155' : '#bfdbfe'
-  const inputText = d ? '#e2e8f0' : '#1e293b'
-  const chipBg = d ? 'rgba(37,99,235,0.2)' : '#eff6ff'
-  const chipBorder = d ? '#1d4ed8' : '#bfdbfe'
-  const chipText = d ? '#93c5fd' : '#1d4ed8'
-  const inputBarBg = d ? '#0f172a' : '#ffffff'
-  const inputBarBorder = d ? '#1e3a5f' : '#dbeafe'
+  const bg = '#ffffff'
+  const msgBg = '#f8fafc'
+  const border = '#dbeafe'
+  const bubbleBotBg = '#ffffff'
+  const bubbleBotBorder = '#e2e8f0'
+  const bubbleText = '#1e293b'
+  const inputBg = '#ffffff'
+  const inputBorder = '#bfdbfe'
+  const inputText = '#1e293b'
+  const chipBg = '#eff6ff'
+  const chipBorder = '#bfdbfe'
+  const chipText = '#1d4ed8'
+  const inputBarBg = '#ffffff'
+  const inputBarBorder = '#dbeafe'
 
   return (
     <>
@@ -211,12 +207,12 @@ export function ProviderBot() {
                     <button
                       onClick={() => speakMessage(msg.content, i)}
                       className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-colors mb-0.5"
-                      style={{ background: speakingIdx === i ? '#0284c7' : (d ? '#334155' : '#e2e8f0') }}
+                      style={{ background: speakingIdx === i ? '#0284c7' : '#e2e8f0' }}
                       title={speakingIdx === i ? 'Stop' : 'Speak'}
                     >
                       {speakingIdx === i
                         ? <VolumeX className="w-3 h-3 text-white" />
-                        : <Volume2 className="w-3 h-3" style={{ color: d ? '#94a3b8' : '#64748b' }} />
+                        : <Volume2 className="w-3 h-3" style={{ color: '#64748b' }} />
                       }
                     </button>
                   </div>
@@ -281,11 +277,11 @@ export function ProviderBot() {
                 className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 ${
                   listening ? 'animate-pulse' : ''
                 }`}
-                style={{ background: listening ? '#dc2626' : (d ? '#334155' : '#e2e8f0') }}
+                style={{ background: listening ? '#dc2626' : '#e2e8f0' }}
               >
                 {listening
                   ? <MicOff className="w-4 h-4 text-white" />
-                  : <Mic className="w-4 h-4" style={{ color: d ? '#94a3b8' : '#64748b' }} />
+                  : <Mic className="w-4 h-4" style={{ color: '#64748b' }} />
                 }
               </button>
             )}

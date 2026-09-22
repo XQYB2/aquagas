@@ -29,6 +29,7 @@ type Order = {
   cancel_reason: string | null
   delivery_proof_url: string | null
   delivered_at: string | null
+  containers_ready_at: string | null
   items: { id: string; product_name: string; quantity: number; unit_price: number }[]
 }
 
@@ -48,6 +49,7 @@ export default function OrderDetailPage() {
   const [retryingPayment, setRetryingPayment] = useState(false)
   const [retryError, setRetryError] = useState('')
   const [retryQrUrl, setRetryQrUrl] = useState<string | null>(null)
+  const [confirmingContainers, setConfirmingContainers] = useState(false)
 
   const [review, setReview] = useState<Review | null>(null)
   const [reviewRating, setReviewRating] = useState(0)
@@ -59,7 +61,7 @@ export default function OrderDetailPage() {
       setLoading(true)
       const { data: o } = await supabase
         .from('orders')
-        .select('id, status, total_amount, delivery_address, estimated_delivery, payment_method, payment_status, delivery_type, scheduled_at, cancel_reason, delivery_proof_url, delivered_at, created_at, provider_id, providers(store_name, delivery_fee, service_type)')
+        .select('id, status, total_amount, delivery_address, estimated_delivery, payment_method, payment_status, delivery_type, scheduled_at, cancel_reason, delivery_proof_url, delivered_at, containers_ready_at, created_at, provider_id, providers(store_name, delivery_fee, service_type)')
         .eq('id', id)
         .single()
 
@@ -93,6 +95,7 @@ export default function OrderDetailPage() {
         cancel_reason: op.cancel_reason || null,
         delivery_proof_url: op.delivery_proof_url || null,
         delivered_at: op.delivered_at || null,
+        containers_ready_at: op.containers_ready_at || null,
         items: (items || []).map((i: any) => ({
           id: i.id, product_name: i.product_name || i.products?.name || 'Product unavailable', quantity: i.quantity, unit_price: i.unit_price,
         })),
@@ -119,12 +122,22 @@ export default function OrderDetailPage() {
           status: r.status,
           payment_status: r.payment_status ?? prev.payment_status,
           estimated_delivery: r.estimated_delivery ?? prev.estimated_delivery,
+          containers_ready_at: r.containers_ready_at ?? prev.containers_ready_at,
         } : null)
       })
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
   }, [id])
+
+  async function confirmContainersOutside() {
+    if (!order || !user || order.containers_ready_at) return
+    setConfirmingContainers(true)
+    const confirmedAt = new Date().toISOString()
+    const { error } = await supabase.from('orders').update({ containers_ready_at: confirmedAt } as any).eq('id', order.id).eq('customer_id', user.id)
+    if (!error) setOrder(current => current ? { ...current, containers_ready_at: confirmedAt } : current)
+    setConfirmingContainers(false)
+  }
 
   useEffect(() => {
     if (!order || order.status !== 'pending_payment' || !user) return
@@ -338,6 +351,19 @@ export default function OrderDetailPage() {
             orderStatus={order.status}
             defaultOpen
           />
+        )}
+
+        {order.status === 'awaiting_pickup' && (
+          <div className={`rounded-2xl border p-5 ${order.containers_ready_at ? 'border-green-200 bg-green-50' : 'border-purple-200 bg-purple-50'}`}>
+            <div className="flex items-start gap-3">
+              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${order.containers_ready_at ? 'bg-green-100 text-green-700' : 'bg-white text-purple-700'}`}><Package className="h-5 w-5" /></span>
+              <div className="min-w-0 flex-1">
+                <h2 className="font-bold text-gray-900">{order.containers_ready_at ? 'Ready for pickup' : order.service_type === 'lpg' ? 'Place your empty cylinder outside' : 'Place your empty gallons outside'}</h2>
+                <p className="mt-1 text-sm text-gray-600">{order.containers_ready_at ? 'The provider has been notified and can now mark the containers as picked up.' : 'Confirm only after the containers are in a safe, accessible pickup location.'}</p>
+                {!order.containers_ready_at && <button type="button" onClick={confirmContainersOutside} disabled={confirmingContainers} className="mt-4 min-h-11 rounded-xl bg-purple-600 px-4 text-sm font-bold text-white hover:bg-purple-700 disabled:opacity-60">{confirmingContainers ? 'Confirming…' : order.service_type === 'lpg' ? 'Cylinder is outside' : 'Gallons are outside'}</button>}
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Delivery Address */}

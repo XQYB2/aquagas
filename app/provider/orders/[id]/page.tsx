@@ -5,7 +5,7 @@ import { useProvider } from '@/lib/provider-context'
 import { OrderStatusBadge, getNextStatuses, STATUS_LABELS, STATUS_DESCRIPTIONS } from '@/components/provider/OrderStatusBadge'
 import { Phone, MapPin, Banknote, Clock, AlertTriangle, Package, Camera, Upload, Map } from 'lucide-react'
 import Link from 'next/link'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { OrderStatus } from '@/lib/provider-context'
 import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
@@ -41,9 +41,20 @@ export default function ProviderOrderDetailPage() {
   const [proofUrl, setProofUrl] = useState<string | null>((orders.find(o => o.id === id) as any)?.delivery_proof_url ?? null)
   const [uploadingProof, setUploadingProof] = useState(false)
   const [proofError, setProofError] = useState('')
+  const [containersReadyAt, setContainersReadyAt] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const order = orders.find(o => o.id === id)
+
+  useEffect(() => {
+    setContainersReadyAt(order?.containers_ready_at || null)
+    const channel = supabase.channel(`provider-container-ready-${id}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}` }, payload => {
+        setContainersReadyAt((payload.new as any).containers_ready_at || null)
+      })
+      .subscribe()
+    return () => { void supabase.removeChannel(channel) }
+  }, [id, order?.containers_ready_at])
 
   if (!order) {
     return (
@@ -60,6 +71,7 @@ export default function ProviderOrderDetailPage() {
 
   async function handleStatusUpdate(newStatus: OrderStatus) {
     if (newStatus === 'cancelled') { setShowCancelModal(true); return }
+    if (newStatus === 'picked_up' && !containersReadyAt) return
     setLoading(newStatus)
     await new Promise(r => setTimeout(r, 600))
     const extra = estimatedDelivery ? { estimated_delivery: estimatedDelivery } : undefined
@@ -154,7 +166,7 @@ export default function ProviderOrderDetailPage() {
                 <button
                   key={status}
                   onClick={() => handleStatusUpdate(status)}
-                  disabled={!!loading}
+                  disabled={!!loading || (status === 'picked_up' && !containersReadyAt)}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 ${ACTION_STYLES[status] || 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                 >
                   {loading === status ? (
@@ -171,6 +183,12 @@ export default function ProviderOrderDetailPage() {
                 </button>
               ))}
             </div>
+            {order.status === 'awaiting_pickup' && (
+              <div className={`rounded-xl border px-4 py-3 text-sm ${containersReadyAt ? 'border-green-200 bg-green-50 text-green-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
+                <p className="font-bold">{containersReadyAt ? 'Customer confirmed the containers are outside.' : 'Waiting for the customer to confirm the containers are outside.'}</p>
+                <p className="mt-1 text-xs">{containersReadyAt ? `Confirmed ${new Date(containersReadyAt).toLocaleString('en-PH')}. You can now mark them picked up.` : 'The pickup button unlocks automatically after confirmation.'}</p>
+              </div>
+            )}
           </div>
         )}
 

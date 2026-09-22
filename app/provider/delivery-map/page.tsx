@@ -156,7 +156,7 @@ export default function DeliveryMapPage() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-extrabold text-gray-900">Delivery Map</h1>
           <p className="text-sm text-gray-500 mt-0.5">
@@ -166,7 +166,7 @@ export default function DeliveryMapPage() {
         <button
           onClick={() => openRoute(routeTargets, storeLat, storeLng)}
           disabled={activeOrders.length === 0}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-water-600 hover:bg-water-700 text-white text-sm font-bold disabled:opacity-40 transition-colors"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-water-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-water-700 disabled:opacity-40 sm:w-auto"
         >
           <Navigation className="w-4 h-4" />
           {selectedOrders.length > 0 ? `Route (${selectedOrders.length})` : 'Route All'}
@@ -174,7 +174,7 @@ export default function DeliveryMapPage() {
       </div>
 
       {/* Map */}
-      <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-gray-100" style={{ height: 420 }}>
+      <div className="h-[min(26rem,55dvh)] min-h-72 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 shadow-sm sm:h-[26rem]">
         <div ref={mapRef} style={{ height: '100%', width: '100%' }} />
       </div>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
@@ -16,6 +16,14 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [resetSent, setResetSent] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
+  const [notice, setNotice] = useState('')
+
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('notice')
+    if (code === 'google_account_exists') {
+      setNotice('This Google account already has an AquaGas account. Continue with Google below to sign in.')
+    }
+  }, [])
 
   async function handleForgotPassword() {
     if (!email) { setError('Enter your email above first, then click Forgot password.'); return }
@@ -135,6 +143,12 @@ export default function LoginPage() {
           )}
           {googleLoading ? 'Redirecting…' : 'Continue with Google'}
         </button>
+
+        {notice && (
+          <div role="status" className="mb-4 rounded-xl border border-water-200 bg-water-50 p-3 text-sm text-water-800">
+            {notice}
+          </div>
+        )}
 
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 h-px bg-gray-200" />

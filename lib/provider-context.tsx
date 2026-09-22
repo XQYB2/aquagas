@@ -31,6 +31,7 @@ export type ProviderOrder = {
   delivery_lng: number | null
   created_at: string
   updated_at: string
+  containers_ready_at: string | null
   items: { id: string; product_name: string; quantity: number; unit_price: number }[]
 }
 
@@ -195,7 +196,7 @@ export function ProviderAuthProvider({ children }: { children: React.ReactNode }
   async function loadOrders(providerId: string): Promise<ProviderOrder[]> {
     const { data: orderRows } = await supabase
       .from('orders')
-      .select('id, status, total_amount, delivery_address, delivery_lat, delivery_lng, payment_method, payment_status, notes, estimated_delivery, created_at, updated_at, customer_id')
+      .select('id, status, total_amount, delivery_address, delivery_lat, delivery_lng, payment_method, payment_status, notes, estimated_delivery, containers_ready_at, created_at, updated_at, customer_id')
       .eq('provider_id', providerId)
       .neq('status', 'pending_payment')
       .order('created_at', { ascending: false })
@@ -232,6 +233,7 @@ export function ProviderAuthProvider({ children }: { children: React.ReactNode }
       delivery_lng: o.delivery_lng || null,
       created_at: o.created_at,
       updated_at: o.updated_at,
+      containers_ready_at: o.containers_ready_at || null,
       items: (itemRows || [])
         .filter((i: any) => i.order_id === o.id)
         .map((i: any) => ({ id: i.id, product_name: i.product_name || i.products?.name || 'Product unavailable', quantity: i.quantity, unit_price: i.unit_price })),
