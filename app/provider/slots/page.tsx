@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useProvider } from '@/lib/provider-context'
+import { useProvider, type OrderStatus } from '@/lib/provider-context'
 import { supabase } from '@/lib/supabase'
-import { CalendarClock, Plus, Trash2, Users, Clock, ChevronDown, ChevronUp, Package } from 'lucide-react'
+import { STATUS_LABELS, OrderStatusBadge, getNextStatuses } from '@/components/provider/OrderStatusBadge'
+import { CalendarClock, Plus, Trash2, Users, Clock, ChevronDown, ChevronUp, Package, Loader2 } from 'lucide-react'
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -19,10 +20,11 @@ type Slot = {
 
 type BatchOrder = {
   id: string
-  status: string
+  status: OrderStatus
   total_amount: number
   customer_name: string
   delivery_address: string
+  containers_ready_at: string | null
   items: { product_name: string; quantity: number }[]
 }
 
@@ -45,7 +47,8 @@ export default function ProviderSlotsPage() {
   const [saving, setSaving] = useState(false)
   const [expandedSlot, setExpandedSlot] = useState<string | null>(null)
   const [batchOrders, setBatchOrders] = useState<Record<string, BatchOrder[]>>({})
-  const [dispatching, setDispatching] = useState<string | null>(null)
+  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null)
+  const [actionError, setActionError] = useState('')
 
   const [form, setForm] = useState({
     day_of_week: 1,
@@ -93,10 +96,9 @@ export default function ProviderSlotsPage() {
   }
 
   async function loadBatchOrders(slotId: string) {
-    if (batchOrders[slotId]) return
     const { data: orderRows } = await supabase
       .from('orders')
-      .select('id, status, total_amount, delivery_address, customer_id')
+      .select('id, status, total_amount, delivery_address, customer_id, containers_ready_at')
       .eq('slot_id', slotId)
       .not('status', 'in', '("delivered","cancelled")')
       .order('created_at')
@@ -114,10 +116,11 @@ export default function ProviderSlotsPage() {
     const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p.full_name]))
     const orders: BatchOrder[] = orderRows.map((o: any) => ({
       id: o.id,
-      status: o.status,
+      status: o.status as OrderStatus,
       total_amount: o.total_amount,
       customer_name: profileMap[o.customer_id] || 'Customer',
       delivery_address: o.delivery_address,
+      containers_ready_at: o.containers_ready_at || null,
       items: (items || [])
         .filter((i: any) => i.order_id === o.id)
         .map((i: any) => ({ product_name: i.product_name || i.products?.name || 'Product unavailable', quantity: i.quantity })),
@@ -127,27 +130,47 @@ export default function ProviderSlotsPage() {
 
   async function handleExpand(slotId: string) {
     if (expandedSlot === slotId) { setExpandedSlot(null); return }
+    setActionError('')
     setExpandedSlot(slotId)
     await loadBatchOrders(slotId)
   }
 
-  async function handleDispatchBatch(slotId: string) {
-    if (!confirm('Mark all orders in this batch as Out for Delivery?')) return
-    setDispatching(slotId)
-    const orders = batchOrders[slotId] || []
-    const ids = orders.filter(o => o.status === 'being_prepared' || o.status === 'confirmed' || o.status === 'placed').map(o => o.id)
-    if (ids.length === 0) { setDispatching(null); return }
+  function getNextAction(order: BatchOrder): OrderStatus | null {
+    return getNextStatuses(order.status).find(status => status !== 'cancelled') || null
+  }
 
-    await supabase
+  async function handleOrderStatus(slotId: string, order: BatchOrder, nextStatus: OrderStatus) {
+    if (nextStatus === 'picked_up' && !order.containers_ready_at) return
+
+    setUpdatingOrder(order.id)
+    setActionError('')
+    const updatedAt = new Date().toISOString()
+    const changes: { status: OrderStatus; updated_at: string; delivered_at?: string } = {
+      status: nextStatus,
+      updated_at: updatedAt,
+    }
+    if (nextStatus === 'delivered') changes.delivered_at = updatedAt
+
+    let query = supabase
       .from('orders')
-      .update({ status: 'out_for_delivery', updated_at: new Date().toISOString() })
-      .in('id', ids)
+      .update(changes)
+      .eq('id', order.id)
+      .eq('status', order.status)
 
-    setBatchOrders(b => ({
-      ...b,
-      [slotId]: (b[slotId] || []).map(o => ids.includes(o.id) ? { ...o, status: 'out_for_delivery' } : o),
+    if (nextStatus === 'picked_up') query = query.not('containers_ready_at', 'is', null)
+    const { data, error } = await query.select('id')
+
+    if (error || !data?.length) {
+      setActionError(error?.message || 'This order changed elsewhere. Close and reopen the batch, then try again.')
+      setUpdatingOrder(null)
+      return
+    }
+
+    setBatchOrders(current => ({
+      ...current,
+      [slotId]: (current[slotId] || []).map(item => item.id === order.id ? { ...item, status: nextStatus } : item),
     }))
-    setDispatching(null)
+    setUpdatingOrder(null)
   }
 
   return (
@@ -245,8 +268,6 @@ export default function ProviderSlotsPage() {
             const cutoffTime = new Date(next.getTime() - slot.cutoff_minutes * 60000)
             const orders = batchOrders[slot.id] || []
             const isExpanded = expandedSlot === slot.id
-            const dispatchable = orders.filter(o => ['placed', 'confirmed', 'being_prepared'].includes(o.status))
-
             return (
               <div key={slot.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
                 <div className="p-5">
@@ -298,37 +319,52 @@ export default function ProviderSlotsPage() {
                 {/* Batch orders list */}
                 {isExpanded && (
                   <div className="border-t border-gray-100 bg-gray-50 p-4 space-y-3">
+                    {actionError && (
+                      <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                        {actionError}
+                      </div>
+                    )}
                     {orders.length === 0 ? (
                       <p className="text-sm text-gray-400 text-center py-4">No active orders in this slot yet.</p>
                     ) : (
                       <>
-                        {orders.map(o => (
-                          <div key={o.id} className="bg-white rounded-xl border border-gray-100 p-3">
-                            <div className="flex items-start justify-between gap-2 mb-1">
-                              <p className="text-sm font-semibold text-gray-900">{o.customer_name}</p>
-                              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                                o.status === 'out_for_delivery' ? 'bg-orange-50 text-orange-600' :
-                                o.status === 'delivered' ? 'bg-green-50 text-green-700' :
-                                'bg-blue-50 text-blue-700'
-                              }`}>{o.status.replace(/_/g, ' ')}</span>
+                        {orders.map(o => {
+                          const nextAction = getNextAction(o)
+                          const waitingForCustomer = o.status === 'awaiting_pickup' && !o.containers_ready_at
+                          const isUpdating = updatingOrder === o.id
+
+                          return (
+                          <div key={o.id} className="rounded-xl border border-gray-100 bg-white p-3">
+                            <div className="mb-1 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                              <p className="min-w-0 break-words text-sm font-semibold text-gray-900">{o.customer_name}</p>
+                              <OrderStatusBadge status={o.status} />
                             </div>
-                            <p className="text-xs text-gray-400 truncate mb-1">{o.delivery_address}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="mb-1 break-words text-xs text-gray-400">{o.delivery_address}</p>
+                            <p className="break-words text-xs text-gray-500">
                               {o.items.map(i => `${i.product_name} ×${i.quantity}`).join(', ')}
                             </p>
-                            <p className="text-xs font-bold text-gray-900 mt-1">₱{o.total_amount}</p>
+                            <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                              <p className="text-xs font-bold text-gray-900">₱{o.total_amount}</p>
+                              {nextAction && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOrderStatus(slot.id, o, nextAction)}
+                                  disabled={isUpdating || waitingForCustomer || updatingOrder !== null}
+                                  aria-describedby={waitingForCustomer ? `pickup-wait-${o.id}` : undefined}
+                                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-water-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-water-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500 sm:w-auto"
+                                >
+                                  {isUpdating && <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />}
+                                  {isUpdating ? 'Updating...' : waitingForCustomer ? 'Waiting for customer' : STATUS_LABELS[nextAction]}
+                                </button>
+                              )}
+                            </div>
+                            {waitingForCustomer && (
+                              <p id={`pickup-wait-${o.id}`} className="mt-2 text-xs text-amber-700">
+                                The customer must confirm that the empty gallons are outside before pickup.
+                              </p>
+                            )}
                           </div>
-                        ))}
-
-                        {dispatchable.length > 0 && (
-                          <button
-                            onClick={() => handleDispatchBatch(slot.id)}
-                            disabled={dispatching === slot.id}
-                            className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-colors"
-                          >
-                            {dispatching === slot.id ? 'Dispatching…' : `🚚 Dispatch ${dispatchable.length} Order${dispatchable.length !== 1 ? 's' : ''} — Out for Delivery`}
-                          </button>
-                        )}
+                        )})}
                       </>
                     )}
                   </div>
